@@ -65,10 +65,27 @@ TOKEN=$(curl -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-meta
 PUBLIC_IP=$(curl -H "X-aws-ec2-metadata-token: $TOKEN" -s http://169.254.169.254/latest/meta-data/public-ipv4 2>/dev/null || echo "localhost")
 APP_URL="http://$${PUBLIC_IP}"
 
+# Use local Postgres container when use_local_db=true (avoids RDS connectivity issues)
+if [ "${use_local_db}" = "true" ]; then
+  DB_URL="postgresql://pranav:12345678@postgres:5432/postgres?schema=public"
+  COMPOSE_PROFILE="--profile local"
+  DB_VARS="DB_USER=pranav
+DB_PASSWORD=12345678
+DB_NAME=postgres
+"
+  USE_LOCAL_STORAGE="true"
+else
+  DB_URL="${database_url}"
+  COMPOSE_PROFILE=""
+  DB_VARS=""
+  USE_LOCAL_STORAGE="false"
+fi
+
 cat > .env <<EOF
 NODE_ENV=production
 PORT=5000
-DATABASE_URL=${database_url}
+DATABASE_URL=$DB_URL
+$DB_VARS
 REDIS_HOST=redis
 REDIS_PORT=6379
 JWT_SECRET=${jwt_secret}
@@ -78,7 +95,7 @@ JWT_REFRESH_EXPIRES_IN=30d
 FRONTEND_URL=$${APP_URL}
 BACKEND_URL=$${APP_URL}
 NEXT_PUBLIC_API_URL=$${APP_URL}/api
-USE_LOCAL_STORAGE=false
+USE_LOCAL_STORAGE=$USE_LOCAL_STORAGE
 EOF
 
 # ─────────────────────────────────────────────
@@ -88,7 +105,7 @@ COMPOSE_CMD="docker-compose"
 command -v docker-compose &>/dev/null || COMPOSE_CMD="docker compose"
 
 for i in 1 2 3; do
-  $COMPOSE_CMD up -d --build 2>&1 | tee -a /var/log/whizsuite-startup.log
+  $COMPOSE_CMD $COMPOSE_PROFILE up -d --build 2>&1 | tee -a /var/log/whizsuite-startup.log
   sleep 30
   if docker ps | grep -q whizsuite_nginx; then
     echo "WhizSuite started. Access at http://$${PUBLIC_IP}" | tee -a /var/log/whizsuite-startup.log

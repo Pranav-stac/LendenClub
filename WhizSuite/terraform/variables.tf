@@ -60,3 +60,9 @@ variable "admin_ip" {
   type        = string
   default     = "10.0.0.1/32"  # VPC-only; set your IP for SSH from internet
 }
+
+variable "use_local_db" {
+  description = "Use local Postgres container instead of RDS. Set true for demo when RDS is not configured."
+  type        = bool
+  default     = true
+}

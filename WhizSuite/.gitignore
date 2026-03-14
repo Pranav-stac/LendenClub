@@ -32,8 +32,11 @@ WhizSuite/server/.env
 *.swp
 *.swo
 *~
-
+.zip
 # OS
+
+*.zip
+
 .DS_Store
 Thumbs.db
 

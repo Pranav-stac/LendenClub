@@ -50,9 +50,10 @@ function validateAwsCredentials() {
   }
 }
 
-// Validate credentials (only throw error if credentials are explicitly empty, not in development)
+// Skip S3 validation when using local storage (no AWS credentials needed)
 // In development, we'll allow empty credentials but warn
-if (process.env.NODE_ENV === 'production') {
+const useLocalStorage = process.env.USE_LOCAL_STORAGE === 'true' || process.env.USE_LOCAL_STORAGE === '1';
+if (process.env.NODE_ENV === 'production' && !useLocalStorage) {
   validateAwsCredentials();
 }
 

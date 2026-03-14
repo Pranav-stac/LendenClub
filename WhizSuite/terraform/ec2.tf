@@ -29,6 +29,7 @@ resource "aws_instance" "whizsuite_app" {
     github_repo_url = var.github_repo_url
     database_url    = var.database_url
     jwt_secret      = var.jwt_secret
+    use_local_db    = tostring(var.use_local_db)
     frontend_url    = "http://$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4):3000"
     app_name        = var.app_name
   })
