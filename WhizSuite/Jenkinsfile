@@ -165,15 +165,8 @@ pipeline {
                             echo "============================================================"
                         '''
 
-                        // Generate HTML report for Jenkins archive
-                        sh '''
-                            trivy config \
-                                --severity HIGH,CRITICAL \
-                                --format template \
-                                --template "@contrib/html.tpl" \
-                                --output ${REPORT_HTML} \
-                                ${TERRAFORM_DIR} || true
-                        '''
+                        // HTML report skipped – @contrib/html.tpl not bundled in Trivy 0.69
+                        // Table report (trivy-report.txt) is archived and used by AI remediation
 
                         // Fail the stage if CRITICAL or HIGH findings exist
                         catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
@@ -196,10 +189,7 @@ pipeline {
                             Get-Content $env:REPORT_FILE -ErrorAction SilentlyContinue
                             Write-Host "============================================================"
                         '''
-                        powershell '''
-                            $env:PATH = "$env:WORKSPACE\\.tools;$env:PATH"
-                            trivy config --severity HIGH,CRITICAL --format template --template "@contrib/html.tpl" --output $env:REPORT_HTML $env:TERRAFORM_DIR
-                        '''
+                        // HTML report skipped – table report used for AI remediation
                         catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
                             powershell '''
                                 $env:PATH = "$env:WORKSPACE\\.tools;$env:PATH"
@@ -212,18 +202,8 @@ pipeline {
 
             post {
                 always {
-                    // Archive reports regardless of pass/fail
-                    archiveArtifacts artifacts: "${REPORT_FILE}, ${REPORT_HTML}", allowEmptyArchive: true
-
-                    // Publish HTML report to Jenkins UI
-                    publishHTML(target: [
-                        allowMissing         : true,
-                        alwaysLinkToLastBuild: true,
-                        keepAll              : true,
-                        reportDir            : '.',
-                        reportFiles          : "${REPORT_HTML}",
-                        reportName           : 'Trivy Security Report'
-                    ])
+                    // Archive table report (publishHTML plugin not installed, skip HTML)
+                    archiveArtifacts artifacts: "${REPORT_FILE}", allowEmptyArchive: true
                 }
 
                 failure {
