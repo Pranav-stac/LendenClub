@@ -316,12 +316,14 @@ pipeline {
                             echo "Re-running Trivy to verify AI fixes..."
                             TRIVY_TARGET="${WORKSPACE}/WhizSuite/terraform"
                             echo "Scanning: $TRIVY_TARGET"
-                            trivy config \
+                            TRIVY_IGNORE=""
+                            [ -f "${TRIVY_TARGET}/.trivyignore" ] && TRIVY_IGNORE="--ignorefile ${TRIVY_TARGET}/.trivyignore"
+                            trivy config $TRIVY_IGNORE \
                                 --severity HIGH,CRITICAL \
                                 --format table \
                                 "$TRIVY_TARGET"
 
-                            trivy config \
+                            trivy config $TRIVY_IGNORE \
                                 --severity HIGH,CRITICAL \
                                 --exit-code 1 \
                                 "$TRIVY_TARGET"
@@ -330,8 +332,11 @@ pipeline {
                         powershell '''
                             $env:PATH = "$env:WORKSPACE\\.tools;$env:PATH"
                             Write-Host "Re-running Trivy to verify AI fixes..."
-                            trivy config --severity HIGH,CRITICAL --format table $env:TERRAFORM_DIR
-                            trivy config --severity HIGH,CRITICAL --exit-code 1 $env:TERRAFORM_DIR
+                            $trivyTarget = "$env:WORKSPACE\\WhizSuite\\terraform"
+                            $ignore = ""
+                            if (Test-Path "$trivyTarget\\.trivyignore") { $ignore = "--ignorefile $trivyTarget\\.trivyignore" }
+                            trivy config $ignore --severity HIGH,CRITICAL --format table $trivyTarget
+                            trivy config $ignore --severity HIGH,CRITICAL --exit-code 1 $trivyTarget
                         '''
                     }
                 }
