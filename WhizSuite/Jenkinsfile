@@ -7,6 +7,8 @@ pipeline {
         TERRAFORM_DIR   = "WhizSuite/terraform"
         REPORT_FILE     = "trivy-report.txt"
         REPORT_HTML     = "trivy-report.html"
+        TOOLS_DIR       = "${env.WORKSPACE}/.tools"
+        PATH            = "${env.WORKSPACE}/.tools/node-v20.18.0-linux-x64/bin:${env.WORKSPACE}/.tools:${env.PATH}"
     }
 
     options {
@@ -23,57 +25,104 @@ pipeline {
             steps {
                 echo '========== STAGE 1: Checkout =========='
                 checkout scm
-                sh 'echo "Repository cloned successfully"'
-                sh 'ls -la'
+                script {
+                    if (isUnix()) {
+                        sh 'echo "Repository cloned successfully"'
+                        sh 'ls -la'
+                    } else {
+                        bat 'echo Repository cloned successfully'
+                        bat 'dir /b'
+                    }
+                }
             }
         }
 
         // ─────────────────────────────────────────────────────────
-        // STAGE 2 – Install Tooling (Trivy + Terraform)
+        // STAGE 2 – Install Tooling (Trivy + Terraform + Node)
+        // Uses $WORKSPACE/.tools (user-writable) – Jenkins runs non-root
         // ─────────────────────────────────────────────────────────
         stage('Install Tools') {
             steps {
                 echo '========== STAGE 2: Installing Trivy & Terraform =========='
+                script {
+                    if (isUnix()) {
+                        sh '''
+                            TOOLS_DIR="${WORKSPACE}/.tools"
+                            mkdir -p "$TOOLS_DIR"
+                            export PATH="$TOOLS_DIR:$PATH"
 
-                // Install Trivy (IaC security scanner)
-                sh '''
-                    if ! command -v trivy &> /dev/null; then
-                        echo "Installing Trivy ${TRIVY_VERSION}..."
-                        curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh \
-                            | sh -s -- -b /usr/local/bin v${TRIVY_VERSION}
-                    else
-                        echo "Trivy already installed: $(trivy --version)"
-                    fi
-                '''
+                            if ! command -v trivy &> /dev/null; then
+                                echo "Installing Trivy ${TRIVY_VERSION} to $TOOLS_DIR..."
+                                curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh \
+                                    | sh -s -- -b "$TOOLS_DIR" v${TRIVY_VERSION}
+                            else
+                                echo "Trivy already installed: $(trivy --version)"
+                            fi
 
-                // Install Terraform
-                sh '''
-                    if ! command -v terraform &> /dev/null; then
-                        echo "Installing Terraform ${TF_VERSION}..."
-                        curl -fsSL https://releases.hashicorp.com/terraform/${TF_VERSION}/terraform_${TF_VERSION}_linux_amd64.zip \
-                            -o /tmp/terraform.zip
-                        unzip -o /tmp/terraform.zip -d /usr/local/bin
-                        rm /tmp/terraform.zip
-                    else
-                        echo "Terraform already installed: $(terraform version)"
-                    fi
-                '''
+                            if ! command -v terraform &> /dev/null; then
+                                echo "Installing Terraform ${TF_VERSION} to $TOOLS_DIR..."
+                                (cd "$TOOLS_DIR" && curl -fsSL "https://releases.hashicorp.com/terraform/${TF_VERSION}/terraform_${TF_VERSION}_linux_amd64.zip" -o tf.zip && unzip -o tf.zip && rm tf.zip)
+                                if ! command -v terraform &> /dev/null; then
+                                    (cd "$TOOLS_DIR" && curl -fsSL "https://releases.hashicorp.com/terraform/${TF_VERSION}/terraform_${TF_VERSION}_linux_amd64.zip" -o tf.zip && jar xf tf.zip && rm tf.zip)
+                                fi
+                            fi
+                            echo "Terraform: $(terraform version 2>/dev/null || echo 'not found')"
 
-                // Install Node.js (for Gemini AI remediation script)
-                sh '''
-                    if ! command -v node &> /dev/null; then
-                        echo "Installing Node.js 20..."
-                        curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
-                        apt-get install -y nodejs 2>/dev/null || true
-                        if command -v node &> /dev/null; then
-                            echo "Node.js installed: $(node --version)"
-                        else
-                            echo "WARNING: Could not install Node.js. AI remediation may fail. Install manually if needed."
-                        fi
-                    else
-                        echo "Node.js already installed: $(node --version)"
-                    fi
-                '''
+                            if ! command -v node &> /dev/null; then
+                                echo "Installing Node.js 20 to $TOOLS_DIR..."
+                                (cd /tmp && curl -fsSL https://nodejs.org/dist/v20.18.0/node-v20.18.0-linux-x64.tar.gz -o node.tar.gz && tar -xzf node.tar.gz -C "$TOOLS_DIR" && rm node.tar.gz)
+                                export PATH="$TOOLS_DIR/node-v20.18.0-linux-x64/bin:$PATH"
+                                if command -v node &> /dev/null; then
+                                    echo "Node.js installed: $(node --version)"
+                                else
+                                    echo "WARNING: Node.js install failed. AI remediation may fail."
+                                fi
+                            else
+                                echo "Node.js already installed: $(node --version)"
+                            fi
+
+                            echo "Installed in $TOOLS_DIR: $(ls -la $TOOLS_DIR)"
+                        '''
+                    } else {
+                        // Windows: download Trivy, Terraform, Node to workspace .tools dir
+                        powershell '''
+                            $toolsDir = "$env:WORKSPACE\.tools"
+                            New-Item -ItemType Directory -Force -Path $toolsDir | Out-Null
+                            $env:PATH = "$toolsDir;$env:PATH"
+
+                            # Trivy
+                            if (-not (Get-Command trivy -ErrorAction SilentlyContinue)) {
+                                Write-Host "Installing Trivy $env:TRIVY_VERSION..."
+                                $url = "https://github.com/aquasecurity/trivy/releases/download/v$env:TRIVY_VERSION/trivy_$env:TRIVY_VERSION`_Windows-64bit.zip"
+                                Invoke-WebRequest -Uri $url -OutFile "$toolsDir\trivy.zip" -UseBasicParsing
+                                Expand-Archive -Path "$toolsDir\trivy.zip" -DestinationPath $toolsDir -Force
+                                Remove-Item "$toolsDir\trivy.zip" -Force
+                            }
+                            Write-Host "Trivy: $(trivy --version 2>$null)"
+
+                            # Terraform
+                            if (-not (Get-Command terraform -ErrorAction SilentlyContinue)) {
+                                Write-Host "Installing Terraform $env:TF_VERSION..."
+                                $url = "https://releases.hashicorp.com/terraform/$env:TF_VERSION/terraform_$env:TF_VERSION`_windows_amd64.zip"
+                                Invoke-WebRequest -Uri $url -OutFile "$toolsDir\tf.zip" -UseBasicParsing
+                                Expand-Archive -Path "$toolsDir\tf.zip" -DestinationPath $toolsDir -Force
+                                Remove-Item "$toolsDir\tf.zip" -Force
+                            }
+                            Write-Host "Terraform: $(terraform version 2>$null)"
+
+                            # Node.js
+                            if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
+                                Write-Host "Installing Node.js 20..."
+                                $nodeZip = "$toolsDir\node.zip"
+                                Invoke-WebRequest -Uri "https://nodejs.org/dist/v20.18.0/node-v20.18.0-win-x64.zip" -OutFile $nodeZip -UseBasicParsing
+                                Expand-Archive -Path $nodeZip -DestinationPath $toolsDir -Force
+                                Remove-Item $nodeZip -Force
+                                $env:PATH = "$toolsDir\node-v20.18.0-win-x64;$env:PATH"
+                            }
+                            Write-Host "Node: $(node --version)"
+                        '''
+                    }
+                }
             }
         }
 
@@ -91,43 +140,67 @@ pipeline {
         stage('Infrastructure Security Scan') {
             steps {
                 echo '========== STAGE 3: Trivy IaC Security Scan =========='
+                script {
+                    if (isUnix()) {
+                        // Generate table report for console
+                        sh '''
+                            echo "Running Trivy IaC scan on Terraform directory..."
+                            trivy config \
+                                --severity HIGH,CRITICAL \
+                                --format table \
+                                --output ${REPORT_FILE} \
+                                ${TERRAFORM_DIR} || true
 
-                // Generate table report for console
-                sh '''
-                    echo "Running Trivy IaC scan on Terraform directory..."
-                    trivy config \
-                        --severity HIGH,CRITICAL \
-                        --format table \
-                        --output ${REPORT_FILE} \
-                        ${TERRAFORM_DIR} || true
+                            echo ""
+                            echo "============================================================"
+                            echo "              TRIVY SECURITY SCAN REPORT"
+                            echo "============================================================"
+                            cat ${REPORT_FILE}
+                            echo "============================================================"
+                        '''
 
-                    echo ""
-                    echo "============================================================"
-                    echo "              TRIVY SECURITY SCAN REPORT"
-                    echo "============================================================"
-                    cat ${REPORT_FILE}
-                    echo "============================================================"
-                '''
+                        // Generate HTML report for Jenkins archive
+                        sh '''
+                            trivy config \
+                                --severity HIGH,CRITICAL \
+                                --format template \
+                                --template "@contrib/html.tpl" \
+                                --output ${REPORT_HTML} \
+                                ${TERRAFORM_DIR} || true
+                        '''
 
-                // Generate HTML report for Jenkins archive
-                sh '''
-                    trivy config \
-                        --severity HIGH,CRITICAL \
-                        --format template \
-                        --template "@contrib/html.tpl" \
-                        --output ${REPORT_HTML} \
-                        ${TERRAFORM_DIR} || true
-                '''
-
-                // Fail the stage if CRITICAL or HIGH findings exist
-                // catchError allows pipeline to continue to AI Remediation stage
-                catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-                    sh '''
-                        trivy config \
-                            --severity HIGH,CRITICAL \
-                            --exit-code 1 \
-                            ${TERRAFORM_DIR}
-                    '''
+                        // Fail the stage if CRITICAL or HIGH findings exist
+                        catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+                            sh '''
+                                trivy config \
+                                    --severity HIGH,CRITICAL \
+                                    --exit-code 1 \
+                                    ${TERRAFORM_DIR}
+                            '''
+                        }
+                    } else {
+                        powershell '''
+                            $env:PATH = "$env:WORKSPACE\.tools;$env:PATH"
+                            Write-Host "Running Trivy IaC scan on Terraform directory..."
+                            trivy config --severity HIGH,CRITICAL --format table --output $env:REPORT_FILE $env:TERRAFORM_DIR; if ($LASTEXITCODE -ne 0) { $true }
+                            Write-Host ""
+                            Write-Host "============================================================"
+                            Write-Host "              TRIVY SECURITY SCAN REPORT"
+                            Write-Host "============================================================"
+                            Get-Content $env:REPORT_FILE -ErrorAction SilentlyContinue
+                            Write-Host "============================================================"
+                        '''
+                        powershell '''
+                            $env:PATH = "$env:WORKSPACE\.tools;$env:PATH"
+                            trivy config --severity HIGH,CRITICAL --format template --template "@contrib/html.tpl" --output $env:REPORT_HTML $env:TERRAFORM_DIR
+                        '''
+                        catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+                            powershell '''
+                                $env:PATH = "$env:WORKSPACE\.tools;$env:PATH"
+                                trivy config --severity HIGH,CRITICAL --exit-code 1 $env:TERRAFORM_DIR
+                            '''
+                        }
+                    }
                 }
             }
 
@@ -181,12 +254,21 @@ pipeline {
         stage('AI Remediation') {
             steps {
                 echo '========== STAGE 4: AI Remediation (Gemini 2.5 Flash) =========='
-
                 dir('WhizSuite/scripts') {
-                    sh '''
-                        npm install
-                        node ai-remediation.js
-                    '''
+                    script {
+                        if (isUnix()) {
+                            sh 'npm install && node ai-remediation.js'
+                        } else {
+                            powershell '''
+                                $toolsDir = "$env:WORKSPACE\.tools"
+                                if (Test-Path "$toolsDir\node-v20*") {
+                                    $nodeDir = Get-ChildItem "$toolsDir\node-v20*" -Directory | Select-Object -First 1
+                                    $env:PATH = "$($nodeDir.FullName);$env:PATH"
+                                }
+                                npm install; node ai-remediation.js
+                            '''
+                        }
+                    }
                 }
             }
             environment {
@@ -204,19 +286,29 @@ pipeline {
         stage('Security Re-scan') {
             steps {
                 echo '========== STAGE 5: Trivy Re-scan (Verify Fixes) =========='
+                script {
+                    if (isUnix()) {
+                        sh '''
+                            echo "Re-running Trivy to verify AI fixes..."
+                            trivy config \
+                                --severity HIGH,CRITICAL \
+                                --format table \
+                                ${TERRAFORM_DIR}
 
-                sh '''
-                    echo "Re-running Trivy to verify AI fixes..."
-                    trivy config \
-                        --severity HIGH,CRITICAL \
-                        --format table \
-                        ${TERRAFORM_DIR}
-
-                    trivy config \
-                        --severity HIGH,CRITICAL \
-                        --exit-code 1 \
-                        ${TERRAFORM_DIR}
-                '''
+                            trivy config \
+                                --severity HIGH,CRITICAL \
+                                --exit-code 1 \
+                                ${TERRAFORM_DIR}
+                        '''
+                    } else {
+                        powershell '''
+                            $env:PATH = "$env:WORKSPACE\.tools;$env:PATH"
+                            Write-Host "Re-running Trivy to verify AI fixes..."
+                            trivy config --severity HIGH,CRITICAL --format table $env:TERRAFORM_DIR
+                            trivy config --severity HIGH,CRITICAL --exit-code 1 $env:TERRAFORM_DIR
+                        '''
+                    }
+                }
             }
         }
 
@@ -227,22 +319,36 @@ pipeline {
         stage('Terraform Plan') {
             steps {
                 echo '========== STAGE 6: Terraform Plan =========='
-
                 dir("${TERRAFORM_DIR}") {
-                    sh '''
-                        echo "Initialising Terraform..."
-                        terraform init -input=false
+                    script {
+                        if (isUnix()) {
+                            sh '''
+                                echo "Initialising Terraform..."
+                                terraform init -input=false
 
-                        echo ""
-                        echo "Running Terraform plan..."
-                        terraform plan \
-                            -input=false \
-                            -out=tfplan \
-                            -var="aws_region=ap-south-1"
+                                echo ""
+                                echo "Running Terraform plan..."
+                                terraform plan \
+                                    -input=false \
+                                    -out=tfplan \
+                                    -var="aws_region=ap-south-1"
 
-                        echo ""
-                        echo "Terraform plan complete. Review output above before applying."
-                    '''
+                                echo ""
+                                echo "Terraform plan complete. Review output above before applying."
+                            '''
+                        } else {
+                            powershell '''
+                                $env:PATH = "$env:WORKSPACE\.tools;$env:PATH"
+                                Write-Host "Initialising Terraform..."
+                                terraform init -input=false
+                                Write-Host ""
+                                Write-Host "Running Terraform plan..."
+                                terraform plan -input=false -out=tfplan -var="aws_region=ap-south-1"
+                                Write-Host ""
+                                Write-Host "Terraform plan complete. Review output above before applying."
+                            '''
+                        }
+                    }
                 }
             }
 

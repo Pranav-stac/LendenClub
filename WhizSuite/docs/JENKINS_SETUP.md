@@ -6,14 +6,16 @@ This guide walks you through setting up Jenkins to run the WhizSuite DevOps pipe
 
 ## Prerequisites
 
-- Docker Desktop (to run Jenkins) **or** a Jenkins server
+- **Jenkins**: Docker (Linux) or native Windows installation
 - Git
 - GitHub repository with WhizSuite code pushed
 - Gemini API key from [Google AI Studio](https://aistudio.google.com/apikey)
 
 ---
 
-## Step 1: Run Jenkins with Docker
+## Step 1: Run Jenkins
+
+### Option A: Docker (Linux – recommended)
 
 ```bash
 # Start Jenkins container
@@ -22,21 +24,28 @@ docker run -d \
   -p 8080:8080 -p 50000:50000 \
   -v jenkins_home:/var/jenkins_home \
   jenkins/jenkins:lts
-
-# Optional: Mount Docker socket if your pipeline needs Docker (e.g. for agents)
-# Add: -v /var/run/docker.sock:/var/run/docker.sock
 ```
 
 **First-time setup:**
 1. Open **http://localhost:8080** in your browser
-2. Copy the initial admin password from the console: `docker logs jenkins 2>&1 | grep -A 2 "password"`
+2. Copy the initial admin password: `docker logs jenkins 2>&1 | grep -A 2 "password"`
 3. Install **recommended plugins**
 4. Create an admin user
-5. Go to **Manage Jenkins → Plugins** and install:
-   - **Pipeline**
-   - **HTML Publisher** (for Trivy reports)
-   - **Credentials Binding** (for GEMINI_API_KEY)
-   - **Git** (if not already installed)
+
+### Option B: Windows (native Jenkins)
+
+1. Download the Windows installer from [jenkins.io](https://www.jenkins.io/download/)
+2. Run the installer and complete setup
+3. Ensure the Jenkins agent runs as a user that can download from the internet (Trivy, Terraform, Node are auto-installed)
+4. Install **PowerShell** (built-in on Windows 10/11) – the pipeline uses it for Windows stages
+
+**Plugins to install** (Manage Jenkins → Plugins):
+
+- **Pipeline**
+- **HTML Publisher** (for Trivy reports)
+- **Credentials Binding** (for GEMINI_API_KEY)
+- **Git**
+- **PowerShell** (for Windows agents)
 
 ---
 
@@ -159,11 +168,13 @@ If your repo structure is:
 | Issue | Solution |
 |-------|----------|
 | **Checkout fails** | Check Git URL, branch name, credentials for private repos |
-| **Node.js not found** | Jenkins agent may lack Node. Use an agent image with Node pre-installed, or install Node on the agent |
+| **Node.js not found** | Linux: install Node on the agent. **Windows**: pipeline auto-downloads Node to workspace; ensure outbound HTTPS is allowed |
 | **GEMINI_API_KEY not set** | Add credential or global env var; ensure variable name is exact |
 | **Script path not found** | Verify Script Path matches repo layout (`WhizSuite/Jenkinsfile` vs `Jenkinsfile`) |
-| **Trivy install fails** | Agent needs `curl`, `unzip`. Use a Linux-based agent or install tools manually |
+| **Trivy install fails** | Linux: agent needs `curl`, `unzip`. **Windows**: pipeline auto-downloads Trivy; ensure outbound HTTPS works |
 | **Re-scan still fails** | Check if AI Remediation ran (Stage 4 logs). If GEMINI_API_KEY was missing, it skips. Add the key and re-run |
+| **"sh: command not found" on Windows** | Use native Windows Jenkins (not WSL). The pipeline detects OS and uses `bat`/`powershell` on Windows |
+| **PowerShell execution policy** | On Windows, run `Set-ExecutionPolicy RemoteSigned -Scope CurrentUser` if PowerShell scripts are blocked |
 
 ---
 
