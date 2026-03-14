@@ -43,7 +43,7 @@ const applyTerraformFixDeclaration = {
       },
       new_content: {
         type: 'string',
-        description: 'The complete corrected Terraform file content that fixes the vulnerability',
+        description: 'Raw Terraform HCL only. No markdown, no ``` fences, no explanatory text. First character must be # or resource.',
       },
       description: {
         type: 'string',
@@ -62,20 +62,38 @@ function readFileSafe(p) {
   }
 }
 
+/** Strip markdown code fences and leading non-HCL text. AI often wraps output in ```hcl or adds explanatory text. */
+function sanitizeTerraformContent(raw) {
+  if (!raw || typeof raw !== 'string') return raw;
+  let s = raw.trim();
+  s = s.replace(/^```(?:hcl|terraform)?\s*\n?/i, '');
+  s = s.replace(/\n?```\s*$/g, '');
+  s = s.trim();
+  // If AI prefixed with "Here is...", "The fixed file:", etc., skip to first valid HCL
+  const validStart = /^\s*(#|resource\s|variable\s|data\s|terraform\s|output\s|provider\s|module\s)/m;
+  if (s.length > 20 && !validStart.test(s.slice(0, 200))) {
+    const hclMatch = s.search(/\n(#|resource\s|variable\s|data\s|terraform\s|output\s|provider\s|module\s)/);
+    if (hclMatch > 0) s = s.slice(hclMatch + 1);
+    else if (s.includes('resource "')) s = s.slice(s.indexOf('resource "'));
+  }
+  return s.trim() + '\n';
+}
+
 function applyTerraformFix(args, cidrForRestrictions) {
   const { file_path, new_content, description } = args;
+  let content = sanitizeTerraformContent(new_content);
   const fullPath = path.join(TERRAFORM_DIR, file_path);
   if (!APPLICABLE_FILES.includes(file_path)) {
     return { success: false, error: `Invalid file: ${file_path}. Allowed: ${APPLICABLE_FILES.join(', ')}` };
   }
-  if (new_content.includes('cidr_blocks = ["0.0.0.0/0"]')) {
+  if (content.includes('cidr_blocks = ["0.0.0.0/0"]')) {
     return {
       success: false,
       error: `Fix still contains 0.0.0.0/0. You MUST use cidr_blocks = ["${cidrForRestrictions}"] for SSH ingress and egress. Never use 0.0.0.0/0.`,
     };
   }
   try {
-    fs.writeFileSync(fullPath, new_content, 'utf8');
+    fs.writeFileSync(fullPath, content, 'utf8');
     console.log(`[AI Remediation] Applied fix to ${file_path}: ${description}`);
     return { success: true, file: file_path, description };
   } catch (e) {
@@ -135,7 +153,7 @@ Common findings and fixes:
 
 CRITICAL: Terraform and AWS require valid values. Use ONLY the CIDR provided above. Description must match regex [0-9A-Za-z_ .:/()#,@+=&;{}!$*-] - use ASCII hyphen (-) NOT em dash.
 Preserve all other Terraform structure. Output valid Terraform HCL.
-Apply fixes for every vulnerability in the report. Call apply_terraform_fix ONCE per file with the complete corrected content.`;
+Apply fixes for every vulnerability in the report. Call apply_terraform_fix ONCE per file with the complete corrected content  .`;
 
   const userPrompt = `Trivy Security Scan Report:
 ${report}
