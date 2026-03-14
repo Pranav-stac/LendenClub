@@ -276,16 +276,25 @@ pipeline {
                                 echo "Verifying fixes (security_groups.tf excerpt):"
                                 head -65 "${TERRAFORM_DIR_ABS}/security_groups.tf" || true
                                 echo ""
+                                if [ -f "${TERRAFORM_DIR_ABS}/.trivy.yaml" ]; then
+                                  echo "Using .trivy.yaml for re-scan..."
+                                  cat "${TERRAFORM_DIR_ABS}/.trivy.yaml"
+                                fi
+                                echo ""
                                 echo "Re-running Trivy to verify fixes..."
-                                trivy config --severity HIGH,CRITICAL --format table "${TERRAFORM_DIR_ABS}"
-                                trivy config --severity HIGH,CRITICAL --exit-code 1 "${TERRAFORM_DIR_ABS}"
+                                TRIVY_CONFIG=""
+                                [ -f "${TERRAFORM_DIR_ABS}/.trivy.yaml" ] && TRIVY_CONFIG="--config ${TERRAFORM_DIR_ABS}/.trivy.yaml"
+                                trivy config $TRIVY_CONFIG --severity HIGH,CRITICAL --format table "${TERRAFORM_DIR_ABS}"
+                                trivy config $TRIVY_CONFIG --severity HIGH,CRITICAL --exit-code 1 "${TERRAFORM_DIR_ABS}"
                             '''
                         } else {
                             powershell '''
                                 Write-Host "Verifying fixes..."
                                 Get-Content "$env:TERRAFORM_DIR_ABS\\security_groups.tf" -TotalCount 65
-                                trivy config --severity HIGH,CRITICAL --format table $env:TERRAFORM_DIR_ABS
-                                trivy config --severity HIGH,CRITICAL --exit-code 1 $env:TERRAFORM_DIR_ABS
+                                $cfg = ""
+                                if (Test-Path "$env:TERRAFORM_DIR_ABS\\.trivy.yaml") { $cfg = "--config $env:TERRAFORM_DIR_ABS\\.trivy.yaml" }
+                                trivy config $cfg --severity HIGH,CRITICAL --format table $env:TERRAFORM_DIR_ABS
+                                trivy config $cfg --severity HIGH,CRITICAL --exit-code 1 $env:TERRAFORM_DIR_ABS
                             '''
                         }
                     }
