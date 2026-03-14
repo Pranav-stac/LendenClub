@@ -301,48 +301,76 @@ pipeline {
         }
 
         // ─────────────────────────────────────────────────────────
-        // STAGE 6 – Terraform Plan
-        // Only runs after security re-scan passes
-        // Requires AWS credentials: create Jenkins credential 'aws-terraform-credentials'
-        // (Username = Access Key ID, Password = Secret Access Key)
+        // STAGE 6 – Terraform Plan (or Validate)
+        // With aws-terraform-credentials: runs terraform plan
+        // Without credentials: runs terraform validate (no AWS, pipeline still passes)
         // ─────────────────────────────────────────────────────────
         stage('Terraform Plan') {
             steps {
                 echo '========== STAGE 6: Terraform Plan =========='
-                withCredentials([
-                    usernamePassword(
-                        credentialsId: 'aws-terraform-credentials',
-                        usernameVariable: 'AWS_ACCESS_KEY_ID',
-                        passwordVariable: 'AWS_SECRET_ACCESS_KEY'
-                    )
-                ]) {
-                    dir("${TERRAFORM_DIR}") {
-                        script {
+                script {
+                    def credError = null
+                    try {
+                        withCredentials([
+                            usernamePassword(
+                                credentialsId: 'aws-terraform-credentials',
+                                usernameVariable: 'AWS_ACCESS_KEY_ID',
+                                passwordVariable: 'AWS_SECRET_ACCESS_KEY'
+                            )
+                        ]) {
+                            dir("${TERRAFORM_DIR}") {
+                                if (isUnix()) {
+                                    sh '''
+                                        echo "Initialising Terraform..."
+                                        terraform init -input=false
+                                        echo ""
+                                        echo "Running Terraform plan..."
+                                        terraform plan -input=false -out=tfplan -var="aws_region=ap-south-1"
+                                        echo ""
+                                        echo "Terraform plan complete. Review output above before applying."
+                                    '''
+                                } else {
+                                    powershell '''
+                                        $env:PATH = "$env:WORKSPACE\\.tools;$env:PATH"
+                                        Write-Host "Initialising Terraform..."
+                                        terraform init -input=false
+                                        Write-Host ""
+                                        Write-Host "Running Terraform plan..."
+                                        terraform plan -input=false -out=tfplan -var="aws_region=ap-south-1"
+                                        Write-Host ""
+                                        Write-Host "Terraform plan complete. Review output above before applying."
+                                    '''
+                                }
+                            }
+                        }
+                    } catch (e) {
+                        if (e.message?.contains('Could not find credentials') || e.message?.contains('credentials entry')) {
+                            credError = e
+                        } else {
+                            throw e
+                        }
+                    }
+                    if (credError) {
+                        echo ''
+                        echo 'AWS credentials (aws-terraform-credentials) not configured.'
+                        echo 'Running terraform validate instead of plan (no AWS needed).'
+                        echo 'To run full plan: add credential in Jenkins (Step 5 of JENKINS_SETUP.md).'
+                        echo ''
+                        dir("${TERRAFORM_DIR}") {
                             if (isUnix()) {
                                 sh '''
-                                    echo "Initialising Terraform..."
                                     terraform init -input=false
-
+                                    terraform validate
                                     echo ""
-                                    echo "Running Terraform plan..."
-                                    terraform plan \
-                                        -input=false \
-                                        -out=tfplan \
-                                        -var="aws_region=ap-south-1"
-
-                                    echo ""
-                                    echo "Terraform plan complete. Review output above before applying."
+                                    echo "Terraform config is valid. Add aws-terraform-credentials for full plan."
                                 '''
                             } else {
                                 powershell '''
                                     $env:PATH = "$env:WORKSPACE\\.tools;$env:PATH"
-                                    Write-Host "Initialising Terraform..."
                                     terraform init -input=false
+                                    terraform validate
                                     Write-Host ""
-                                    Write-Host "Running Terraform plan..."
-                                    terraform plan -input=false -out=tfplan -var="aws_region=ap-south-1"
-                                    Write-Host ""
-                                    Write-Host "Terraform plan complete. Review output above before applying."
+                                    Write-Host "Terraform config is valid. Add aws-terraform-credentials for full plan."
                                 '''
                             }
                         }
