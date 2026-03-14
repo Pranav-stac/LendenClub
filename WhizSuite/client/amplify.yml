@@ -1,0 +1,22 @@
+version: 1
+frontend:
+  phases:
+    preBuild:
+      commands:
+        # Amplify sets working directory to client/ when monorepo root is set
+        - npm ci
+    build:
+      commands:
+        # Build Next.js app (already in client/ directory)
+        - npm run build
+  artifacts:
+    # Output directory (relative to client/)
+    baseDirectory: .next
+    files:
+      - '**/*'
+  cache:
+    paths:
+      # Cache paths (relative to client/)
+      - node_modules/**/*
+      - .next/cache/**/*
+

@@ -1,0 +1,320 @@
+.calendar {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-2xl);
+  overflow: hidden;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-4) var(--space-6);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.navigation {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.navBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--duration-fast);
+}
+
+.navBtn:hover {
+  background: var(--interactive-hover);
+  color: var(--text-primary);
+}
+
+.title {
+  font-size: var(--text-lg);
+  font-weight: var(--font-semibold);
+  min-width: 200px;
+  text-align: center;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.todayBtn {
+  padding: var(--space-2) var(--space-4);
+  background: transparent;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--duration-fast);
+}
+
+.todayBtn:hover {
+  background: var(--interactive-hover);
+  border-color: var(--border-strong);
+}
+
+.viewToggle {
+  display: flex;
+  background: var(--bg-elevated);
+  border-radius: var(--radius-lg);
+  padding: var(--space-1);
+}
+
+.viewToggle button {
+  padding: var(--space-2) var(--space-4);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--duration-fast);
+}
+
+.viewToggle button.active {
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+}
+
+.dayHeader {
+  padding: var(--space-3);
+  text-align: center;
+  font-size: var(--text-xs);
+  font-weight: var(--font-semibold);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.day {
+  min-height: 100px;
+  padding: var(--space-2);
+  border-bottom: 1px solid var(--border-subtle);
+  border-right: 1px solid var(--border-subtle);
+  cursor: pointer;
+  transition: background var(--duration-fast);
+  position: relative;
+}
+
+.day:hover {
+  background: var(--interactive-hover);
+}
+
+.day:nth-child(7n) {
+  border-right: none;
+}
+
+.otherMonth {
+  opacity: 0.4;
+}
+
+.today {
+  background: var(--today-bg);
+}
+
+.today .dayNumber {
+  background: var(--primary-500);
+  color: white;
+}
+
+.dayNumber {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-full);
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  color: var(--text-secondary);
+  margin-bottom: var(--space-1);
+}
+
+.event {
+  padding: var(--space-2);
+  background: color-mix(in srgb, var(--event-color) 12%, transparent);
+  border-left: 3px solid var(--event-color);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
+  color: var(--text-primary);
+  margin-bottom: var(--space-1);
+  cursor: pointer;
+  transition: all var(--duration-fast);
+  min-height: 50px;
+}
+
+.event:hover {
+  background: color-mix(in srgb, var(--event-color) 20%, transparent);
+  transform: translateX(2px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.eventContent {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.eventHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.eventTime {
+  font-size: 0.7rem;
+  color: var(--text-tertiary);
+  font-weight: 600;
+}
+
+.eventStatus {
+  font-size: 0.65rem;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--status-color) 20%, transparent);
+  color: var(--status-color);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.eventTitle {
+  font-size: var(--text-xs);
+  font-weight: 500;
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.eventMeta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin-top: 2px;
+}
+
+.eventPlatforms {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.platformBadge {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-default);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.platformCount {
+  font-size: 0.65rem;
+  color: var(--text-tertiary);
+  margin-left: 2px;
+}
+
+.mediaIndicator {
+  font-size: 0.65rem;
+  color: var(--text-tertiary);
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.moreEvents {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  padding-left: var(--space-2);
+}
+
+/* Drag and Drop Styles */
+.draggable {
+  cursor: grab;
+  user-select: none;
+}
+
+.draggable:active {
+  cursor: grabbing;
+}
+
+.dragging {
+  opacity: 0.5;
+  transform: scale(0.95);
+  z-index: 1000;
+}
+
+.day.dragOver {
+  background: color-mix(in srgb, var(--primary) 15%, transparent) !important;
+  border: 2px dashed var(--primary) !important;
+  border-radius: var(--radius-md);
+  box-shadow: 0 0 0 4px var(--dragover-shadow);
+}
+
+.day.dragOver .dayNumber {
+  background: var(--primary) !important;
+  color: white !important;
+  transform: scale(1.1);
+}
+
+.day.dragOver::after {
+  content: '📅 Drop to reschedule';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--primary);
+  color: white;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  pointer-events: none;
+  z-index: 10;
+  white-space: nowrap;
+  box-shadow: var(--drag-drop-shadow);
+  animation: pulse 1s ease-in-out infinite;
+}
+
+@keyframes pulse {
+
+  0%,
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+
+  50% {
+    opacity: 0.9;
+    transform: translate(-50%, -50%) scale(1.05);
+  }
+}

@@ -1,0 +1,541 @@
+/* ====================================================
+   WhizSuite Design System
+   ====================================================
+   Brand colors are defined here AND in themeConfig.ts
+   To change brand colors: update both :root vars below
+   AND the BRAND_COLORS in /lib/themeConfig.ts
+   ==================================================== */
+
+:root {
+  /* Primary Colors — BRAND COLORS (change these to rebrand!) */
+  --primary: #DC143C;
+  --primary-dark: #B00E2E;
+  --primary-light: #FF2E55;
+  --primary-glow: rgba(220, 20, 60, 0.4);
+  --primary-100: rgba(220, 20, 60, 0.1);
+  --primary-50: rgba(220, 20, 60, 0.05);
+  --primary-500: #DC143C;
+  --primary-600: #B00E2E;
+  --primary-400: #FF2E55;
+
+  /* Gradients (primary-derived) */
+  --gradient-primary: linear-gradient(135deg, #DC143C 0%, #8B0000 100%);
+
+  /* Status Colors */
+  --success: #00E676;
+  --success-base: #00E676;
+  --warning: #FFAB00;
+  --warning-50: rgba(255, 171, 0, 0.08);
+  --warning-700: #B27800;
+  --error: #FF1744;
+  --info: #2979FF;
+
+  /* Border Radius */
+  --radius-sm: 6px;
+  --radius: 12px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+  --radius-xl: 20px;
+  --radius-2xl: 28px;
+  --radius-3xl: 32px;
+  --radius-full: 9999px;
+
+  /* Spacing */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-20: 80px;
+
+  /* Typography */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+
+  --font-medium: 500;
+  --font-semibold: 600;
+  --font-bold: 700;
+
+  /* Transitions */
+  --duration-fast: 0.15s;
+  --duration-normal: 0.3s;
+  --ease-out: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Z-index */
+  --z-modal: 200;
+
+  /* Neutral */
+  --neutral-700: #404040;
+}
+
+
+/* ====================================================
+   DARK THEME (Default)
+   ==================================================== */
+:root,
+[data-theme="dark"] {
+  /* Backgrounds */
+  --background: #050505;
+  --surface: #0A0A0A;
+  --surface-hover: #111111;
+  --surface-active: #161616;
+  --surface-elevated: #1A1A1A;
+
+  /* Semantic BG */
+  --bg-surface: #0A0A0A;
+  --bg-card: #0F0F0F;
+  --bg-elevated: #141414;
+  --bg-muted: #0D0D0D;
+  --bg-default: #0A0A0A;
+  --bg-base: #050505;
+
+  /* Glass */
+  --glass-bg: rgba(10, 10, 10, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-blur: blur(12px);
+
+  /* Gradient Surface */
+  --gradient-surface: linear-gradient(180deg, rgba(20, 20, 20, 0.6) 0%, rgba(10, 10, 10, 0.9) 100%);
+
+  /* Text */
+  --text-primary: #FFFFFF;
+  --text-secondary: #A0A0A0;
+  --text-tertiary: #666666;
+  --text-inverse: #000000;
+  --text-muted: #888888;
+
+  /* Borders */
+  --border: #1F1F1F;
+  --border-light: #2A2A2A;
+  --border-subtle: #1A1A1A;
+  --border-default: #2A2A2A;
+  --border-strong: #444444;
+  --border-glow: rgba(220, 20, 60, 0.3);
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.5);
+  --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.6), 0 4px 6px -2px rgba(0, 0, 0, 0.4);
+  --shadow-glow: 0 0 20px rgba(220, 20, 60, 0.15);
+
+  /* Interactive */
+  --interactive-hover: rgba(255, 255, 255, 0.06);
+
+  /* Header */
+  --header-bg: rgba(10, 10, 10, 0.8);
+
+  /* Body Background Decorations */
+  --body-gradient-1: rgba(220, 20, 60, 0.08);
+  --body-gradient-2: rgba(220, 20, 60, 0.05);
+  --body-bg-end-1: rgba(5, 5, 5, 0.95);
+  --body-bg-end-2: rgba(10, 10, 10, 0.98);
+  --grid-line-color: rgba(255, 255, 255, 0.02);
+
+  /* Scrollbar */
+  --scrollbar-thumb: #2A2A2A;
+
+  /* Selection */
+  --selection-bg: #B00E2E;
+
+  /* Sidebar */
+  --logo-gradient-start: #fff;
+  --logo-gradient-end: #ccc;
+  --sidebar-active-bg: linear-gradient(90deg, rgba(220, 20, 60, 0.15) 0%, rgba(220, 20, 60, 0.05) 100%);
+
+  /* Overlay */
+  --overlay-bg: rgba(0, 0, 0, 0.5);
+
+  /* Action Buttons (e.g. Media hover buttons) */
+  --action-btn-bg: rgba(15, 15, 15, 0.8);
+  --action-btn-border: rgba(255, 255, 255, 0.1);
+  --action-btn-color: white;
+
+  /* Hardcoded color replacements */
+  --hover-options-bg: rgba(255, 255, 255, 0.1);
+  --today-bg: rgba(220, 38, 38, 0.05);
+  --dragover-shadow: rgba(220, 38, 60, 0.1);
+  --error-bg: rgba(255, 23, 68, 0.1);
+  --error-border: rgba(255, 23, 68, 0.2);
+  --primary-accent-bg: rgba(220, 20, 60, 0.1);
+  --primary-accent-shadow: rgba(220, 20, 60, 0.3);
+  --primary-accent-shadow-hover: rgba(220, 20, 60, 0.4);
+  --item-selected-bg: rgba(220, 38, 38, 0.05);
+  --post-selected-bg: rgba(220, 38, 60, 0.05);
+  --status-active-bg: rgba(34, 197, 94, 0.1);
+  --status-inactive-bg: rgba(107, 114, 128, 0.1);
+  --badge-system-bg: rgba(59, 130, 246, 0.1);
+  --badge-system-color: #3B82F6;
+  --delete-border: rgba(239, 68, 68, 0.3);
+  --delete-hover-bg: rgba(239, 68, 68, 0.1);
+  --owner-badge-bg: rgba(220, 38, 38, 0.1);
+  --card-drop-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.1);
+  --drag-drop-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  --brand-logo-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  --brand-icon-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  --connected-bg: rgba(16, 185, 129, 0.1);
+  --focus-shadow: 0 0 0 3px rgba(220, 38, 60, 0.1);
+
+  /* Review page themed colors */
+  --review-gradient-1: rgba(220, 20, 60, 0.15);
+  --review-gradient-2: rgba(220, 20, 60, 0.1);
+  --review-border-subtle: rgba(220, 20, 60, 0.1);
+  --review-border-medium: rgba(220, 20, 60, 0.2);
+  --review-border-strong: rgba(220, 20, 60, 0.3);
+  --review-bg-subtle: rgba(220, 20, 60, 0.05);
+  --review-bg-medium: rgba(220, 20, 60, 0.1);
+  --review-bg-strong: rgba(220, 20, 60, 0.2);
+  --review-bg-accent: rgba(220, 20, 60, 0.3);
+  --review-glow: 0 4px 20px rgba(220, 20, 60, 0.4);
+  --review-glow-strong: 0 8px 32px rgba(220, 20, 60, 0.3);
+  --review-glow-intense: 0 0 20px rgba(220, 20, 60, 0.5);
+  --review-glow-max: 0 0 30px rgba(220, 20, 60, 0.8);
+  --review-glow-color: rgba(220, 20, 60, 0.4);
+  --review-glow-intense-color: rgba(220, 20, 60, 0.5);
+  --review-glow-max-color: rgba(220, 20, 60, 0.8);
+  --review-focus-ring: 0 0 0 3px rgba(220, 20, 60, 0.2);
+}
+
+
+/* ====================================================
+   LIGHT THEME
+   ==================================================== */
+[data-theme="light"] {
+  /* Backgrounds */
+  --background: #F5F7FA;
+  --surface: #FFFFFF;
+  --surface-hover: #F0F2F5;
+  --surface-active: #E8EBF0;
+  --surface-elevated: #FFFFFF;
+
+  /* Semantic BG */
+  --bg-surface: #FFFFFF;
+  --bg-card: #FFFFFF;
+  --bg-elevated: #F8F9FC;
+  --bg-muted: #F0F2F5;
+  --bg-default: #FFFFFF;
+  --bg-base: #F5F7FA;
+
+  /* Glass */
+  --glass-bg: rgba(255, 255, 255, 0.8);
+  --glass-border: rgba(0, 0, 0, 0.08);
+  --glass-blur: blur(12px);
+
+  /* Gradient Surface */
+  --gradient-surface: linear-gradient(180deg, rgba(245, 247, 250, 0.6) 0%, rgba(235, 238, 244, 0.9) 100%);
+
+  /* Text */
+  --text-primary: #1A1A2E;
+  --text-secondary: #5A5A7A;
+  --text-tertiary: #8888A0;
+  --text-inverse: #FFFFFF;
+  --text-muted: #7A7A96;
+
+  /* Borders */
+  --border: #E2E5EB;
+  --border-light: #EDF0F5;
+  --border-subtle: #E8EBF0;
+  --border-default: #D8DCE4;
+  --border-strong: #C0C4CC;
+  --border-glow: rgba(220, 20, 60, 0.25);
+
+  /* Shadows */
+  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.06), 0 1px 2px 0 rgba(0, 0, 0, 0.04);
+  --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
+  --shadow-lg: 0 10px 25px -3px rgba(0, 0, 0, 0.08), 0 4px 10px -2px rgba(0, 0, 0, 0.04);
+  --shadow-glow: 0 0 20px rgba(220, 20, 60, 0.1);
+
+  /* Interactive */
+  --interactive-hover: rgba(0, 0, 0, 0.04);
+
+  /* Header */
+  --header-bg: rgba(255, 255, 255, 0.85);
+
+  /* Body Background Decorations */
+  --body-gradient-1: rgba(220, 20, 60, 0.03);
+  --body-gradient-2: rgba(220, 20, 60, 0.02);
+  --body-bg-end-1: rgba(245, 247, 250, 0.95);
+  --body-bg-end-2: rgba(240, 242, 248, 0.98);
+  --grid-line-color: rgba(0, 0, 0, 0.03);
+
+  /* Scrollbar */
+  --scrollbar-thumb: #D0D4DC;
+
+  /* Selection */
+  --selection-bg: #FF2E55;
+
+  /* Sidebar */
+  --logo-gradient-start: #1A1A2E;
+  --logo-gradient-end: #3A3A5E;
+  --sidebar-active-bg: linear-gradient(90deg, rgba(220, 20, 60, 0.08) 0%, rgba(220, 20, 60, 0.02) 100%);
+
+  /* Overlay */
+  --overlay-bg: rgba(0, 0, 0, 0.3);
+
+  /* Action Buttons */
+  --action-btn-bg: rgba(255, 255, 255, 0.9);
+  --action-btn-border: rgba(0, 0, 0, 0.12);
+  --action-btn-color: #1A1A2E;
+
+  /* Hardcoded color replacements */
+  --hover-options-bg: rgba(0, 0, 0, 0.06);
+  --today-bg: rgba(220, 38, 38, 0.04);
+  --dragover-shadow: rgba(220, 38, 60, 0.08);
+  --error-bg: rgba(255, 23, 68, 0.06);
+  --error-border: rgba(255, 23, 68, 0.15);
+  --primary-accent-bg: rgba(220, 20, 60, 0.06);
+  --primary-accent-shadow: rgba(220, 20, 60, 0.15);
+  --primary-accent-shadow-hover: rgba(220, 20, 60, 0.2);
+  --item-selected-bg: rgba(220, 38, 38, 0.04);
+  --post-selected-bg: rgba(220, 38, 60, 0.04);
+  --status-active-bg: rgba(34, 197, 94, 0.08);
+  --status-inactive-bg: rgba(107, 114, 128, 0.08);
+  --badge-system-bg: rgba(59, 130, 246, 0.08);
+  --badge-system-color: #2563EB;
+  --delete-border: rgba(239, 68, 68, 0.25);
+  --delete-hover-bg: rgba(239, 68, 68, 0.06);
+  --owner-badge-bg: rgba(220, 38, 38, 0.06);
+  --card-drop-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  --drag-drop-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --brand-logo-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  --brand-icon-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --connected-bg: rgba(16, 185, 129, 0.08);
+  --focus-shadow: 0 0 0 3px rgba(220, 38, 60, 0.08);
+
+  /* Review page themed colors */
+  --review-gradient-1: rgba(220, 20, 60, 0.08);
+  --review-gradient-2: rgba(220, 20, 60, 0.05);
+  --review-border-subtle: rgba(220, 20, 60, 0.06);
+  --review-border-medium: rgba(220, 20, 60, 0.12);
+  --review-border-strong: rgba(220, 20, 60, 0.18);
+  --review-bg-subtle: rgba(220, 20, 60, 0.03);
+  --review-bg-medium: rgba(220, 20, 60, 0.06);
+  --review-bg-strong: rgba(220, 20, 60, 0.1);
+  --review-bg-accent: rgba(220, 20, 60, 0.15);
+  --review-glow: 0 4px 20px rgba(220, 20, 60, 0.15);
+  --review-glow-strong: 0 8px 32px rgba(220, 20, 60, 0.12);
+  --review-glow-intense: 0 0 20px rgba(220, 20, 60, 0.2);
+  --review-glow-max: 0 0 30px rgba(220, 20, 60, 0.3);
+  --review-glow-color: rgba(220, 20, 60, 0.15);
+  --review-glow-intense-color: rgba(220, 20, 60, 0.2);
+  --review-glow-max-color: rgba(220, 20, 60, 0.3);
+  --review-focus-ring: 0 0 0 3px rgba(220, 20, 60, 0.1);
+
+  /* Neutral */
+  --neutral-700: #D4D4D4;
+
+  /* Warning override for light */
+  --warning-50: rgba(255, 171, 0, 0.06);
+  --warning-700: #92600D;
+}
+
+
+/* ====================================================
+   GLOBAL STYLES
+   ==================================================== */
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+html,
+body {
+  max-width: 100vw;
+  overflow-x: hidden;
+  font-family: var(--font-sans);
+  background: var(--background);
+  color: var(--text-primary);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  position: relative;
+  min-height: 100vh;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background:
+    radial-gradient(circle at 15% 50%, var(--body-gradient-1), transparent 25%),
+    radial-gradient(circle at 85% 30%, var(--body-gradient-2), transparent 25%),
+    linear-gradient(135deg, var(--body-bg-end-1) 0%, var(--body-bg-end-2) 100%);
+  pointer-events: none;
+  z-index: -2;
+}
+
+body::after {
+  content: '';
+  position: fixed;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background:
+    repeating-linear-gradient(transparent 0,
+      transparent 98px,
+      var(--grid-line-color) 98px,
+      var(--grid-line-color) 100px),
+    repeating-linear-gradient(90deg,
+      transparent 0,
+      transparent 98px,
+      var(--grid-line-color) 98px,
+      var(--grid-line-color) 100px);
+  transform: rotate(15deg);
+  animation: bgMove 60s linear infinite;
+  pointer-events: none;
+  z-index: -1;
+  opacity: 0.4;
+}
+
+@keyframes bgMove {
+  0% {
+    transform: rotate(15deg) translate(0, 0);
+  }
+
+  100% {
+    transform: rotate(15deg) translate(-50px, -50px);
+  }
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+input,
+textarea,
+select {
+  font-family: inherit;
+  background: var(--surface);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Premium Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: var(--radius-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--primary);
+}
+
+/* Glass Utility Class */
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+}
+
+/* Focus Styles */
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: var(--selection-bg);
+  color: white;
+}
+
+/* ====================================================
+   THEME TRANSITION
+   Smooth transition when switching themes
+   ==================================================== */
+html[data-theme],
+html[data-theme] body,
+html[data-theme] aside,
+html[data-theme] header,
+html[data-theme] main,
+html[data-theme] nav,
+html[data-theme] .glass {
+  transition:
+    background-color 0.35s ease,
+    color 0.35s ease,
+    border-color 0.35s ease,
+    box-shadow 0.35s ease;
+}
+
+
+/* Mobile Responsive Utilities */
+@media (max-width: 768px) {
+
+  /* Ensure text doesn't overflow on mobile */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+  }
+
+  /* Prevent horizontal scroll */
+  body {
+    overflow-x: hidden;
+  }
+
+  /* Better touch targets */
+  button,
+  a,
+  input,
+  select,
+  textarea {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+@media (max-width: 480px) {
+
+  /* Extra small devices */
+  html {
+    font-size: 14px;
+  }
+}

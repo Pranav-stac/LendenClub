@@ -1,0 +1,2267 @@
+{
+	"info": {
+		"_postman_id": "whizsuite-api-collection",
+		"name": "WhizSuite API",
+		"description": "Complete API collection for WhizSuite backend",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "whizsuite"
+	},
+	"item": [
+		{
+			"name": "Health",
+			"item": [
+				{
+					"name": "Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/health",
+							"host": ["{{baseUrl}}"],
+							"path": ["health"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Auth",
+			"item": [
+				{
+					"name": "Register",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"Password123\",\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/register",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "auth", "register"]
+						}
+					}
+				},
+				{
+					"name": "Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const jsonData = pm.response.json();",
+									"    if (jsonData.data && jsonData.data.tokens) {",
+									"        pm.collectionVariables.set(\"authToken\", jsonData.data.tokens.accessToken);",
+									"        pm.collectionVariables.set(\"refreshToken\", jsonData.data.tokens.refreshToken);",
+									"        console.log(\"Tokens saved to collection variables\");",
+									"    } else {",
+									"        console.error(\"Unexpected response structure:\", jsonData);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"Password123\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/login",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "auth", "login"]
+						}
+					}
+				},
+				{
+					"name": "Refresh Token",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/refresh",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "auth", "refresh"]
+						}
+					}
+				},
+				{
+					"name": "Get Current User",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/me",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "auth", "me"]
+						}
+					}
+				},
+				{
+					"name": "Update Profile",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"avatarUrl\": \"https://example.com/avatar.jpg\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/profile",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "auth", "profile"]
+						}
+					}
+				},
+				{
+					"name": "Change Password",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"currentPassword\": \"OldPassword123\",\n  \"newPassword\": \"NewPassword123\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/password",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "auth", "password"]
+						}
+					}
+				},
+				{
+					"name": "Logout",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/logout",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "auth", "logout"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Workspaces",
+			"item": [
+				{
+					"name": "Create Workspace",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"My Workspace\",\n  \"description\": \"Workspace description\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/workspaces",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "workspaces"]
+						}
+					}
+				},
+				{
+					"name": "Get My Workspaces",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const jsonData = pm.response.json();",
+									"    if (jsonData.success && jsonData.data && jsonData.data.length > 0) {",
+									"        // Set the first workspace ID automatically",
+									"        const firstWorkspace = jsonData.data[0];",
+									"        pm.collectionVariables.set(\"workspaceId\", firstWorkspace.id);",
+									"        console.log(\"✅ Workspace ID set to:\", firstWorkspace.id);",
+									"        console.log(\"Workspace name:\", firstWorkspace.name);",
+									"        ",
+									"        // If multiple workspaces, log them",
+									"        if (jsonData.data.length > 1) {",
+									"            console.log(\"ℹ️ You have\", jsonData.data.length, \"workspaces. Using the first one.\");",
+									"            console.log(\"Available workspaces:\");",
+									"            jsonData.data.forEach((ws, index) => {",
+									"                console.log(\"  \" + (index + 1) + \".\", ws.name, \"(\" + ws.id + \")\");",
+									"            });",
+									"        }",
+									"    } else {",
+									"        console.warn(\"⚠️ No workspaces found. Create a workspace first.\");",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/workspaces/my",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "workspaces", "my"]
+						}
+					}
+				},
+				{
+					"name": "Get Current Workspace",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							},
+							{
+								"key": "x-workspace-id",
+								"value": "{{workspaceId}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/workspaces/current",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "workspaces", "current"]
+						}
+					}
+				},
+				{
+					"name": "Update Workspace",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							},
+							{
+								"key": "x-workspace-id",
+								"value": "{{workspaceId}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Updated Workspace Name\",\n  \"description\": \"Updated description\",\n  \"logoUrl\": \"https://example.com/logo.png\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/workspaces/current",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "workspaces", "current"]
+						}
+					}
+				},
+				{
+					"name": "Delete Workspace",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							},
+							{
+								"key": "x-workspace-id",
+								"value": "{{workspaceId}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/workspaces/current",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "workspaces", "current"]
+						}
+					}
+				},
+				{
+					"name": "Accept Invitation",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// Check if invitationToken is set and update the URL",
+									"const invitationToken = pm.collectionVariables.get(\"invitationToken\");",
+									"",
+									"if (!invitationToken || invitationToken.trim() === \"\") {",
+									"    console.error(\"❌ Error: invitationToken is not set!\");",
+									"    console.log(\"💡 Please run 'Invite Member' first to generate an invitation token.\");",
+									"    console.log(\"Current collection variables:\", JSON.stringify(pm.collectionVariables.toObject(), null, 2));",
+									"    // Don't throw - let the request fail naturally so we can see the error",
+									"} else {",
+									"    // Update the path variable",
+									"    const url = pm.request.url;",
+									"    const tokenVar = url.variables.get(\"token\");",
+									"    if (tokenVar) {",
+									"        tokenVar.value = invitationToken;",
+									"        console.log(\"✅ Set token in URL variable\");",
+									"    } else {",
+									"        // Fallback: update path directly",
+									"        const pathArray = url.path;",
+									"        const tokenIndex = pathArray.findIndex(p => p === \":token\" || p === \"{{invitationToken}}\");",
+									"        if (tokenIndex !== -1) {",
+									"            pathArray[tokenIndex] = invitationToken;",
+									"            console.log(\"✅ Set token in path array\");",
+									"        }",
+									"    }",
+									"    console.log(\"✅ Using invitation token:\", invitationToken.substring(0, 20) + \"...\");",
+									"    console.log(\"🔗 Final URL path:\", url.path.join(\"/\"));",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"console.log(\"Response status:\", pm.response.code);",
+									"console.log(\"Response body:\", pm.response.text());",
+									"",
+									"if (pm.response.code === 200 || pm.response.code === 201) {",
+									"    const jsonData = pm.response.json();",
+									"    if (jsonData.success && jsonData.data) {",
+									"        console.log(\"✅ Invitation accepted successfully!\");",
+									"        console.log(\"Workspace:\", jsonData.data.name);",
+									"        console.log(\"Workspace ID:\", jsonData.data.id);",
+									"    }",
+									"} else {",
+									"    console.error(\"❌ Failed to accept invitation\");",
+									"    try {",
+									"        const errorData = pm.response.json();",
+									"        console.error(\"Error:\", errorData.error || errorData.message);",
+									"    } catch (e) {",
+									"        console.error(\"Response:\", pm.response.text());",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/workspaces/invitations/:token/accept",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "workspaces", "invitations", ":token", "accept"],
+							"variable": [
+								{
+									"key": "token",
+									"value": "{{invitationToken}}",
+									"description": "Will be set automatically from invitationToken collection variable"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Members",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							},
+							{
+								"key": "x-workspace-id",
+								"value": "{{workspaceId}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/workspaces/members",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "workspaces", "members"]
+						}
+					}
+				},
+				{
+					"name": "Invite Member",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200 || pm.response.code === 201) {",
+									"    const jsonData = pm.response.json();",
+									"    if (jsonData.success && jsonData.data && jsonData.data.invitationToken) {",
+									"        // Save invitation token for accepting invitation",
+									"        pm.collectionVariables.set(\"invitationToken\", jsonData.data.invitationToken);",
+									"        console.log(\"✅ Invitation token saved:\", jsonData.data.invitationToken);",
+									"        console.log(\"📧 Invited email:\", pm.request.body.email || \"Check request body\");",
+									"        console.log(\"💡 Now you can use 'Accept Invitation' with this token\");",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							},
+							{
+								"key": "x-workspace-id",
+								"value": "{{workspaceId}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"invited@example.com\",\n  \"roleId\": \"{{roleId}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/workspaces/members/invite",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "workspaces", "members", "invite"]
+						}
+					}
+				},
+				{
+					"name": "Update Member Role",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							},
+							{
+								"key": "x-workspace-id",
+								"value": "{{workspaceId}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"roleId\": \"new-role-uuid-here\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/workspaces/members/:memberId/role",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "workspaces", "members", ":memberId", "role"],
+							"variable": [
+								{
+									"key": "memberId",
+									"value": "member-uuid-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Remove Member",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							},
+							{
+								"key": "x-workspace-id",
+								"value": "{{workspaceId}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/workspaces/members/:memberId",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "workspaces", "members", ":memberId"],
+							"variable": [
+								{
+									"key": "memberId",
+									"value": "member-uuid-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Roles",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const jsonData = pm.response.json();",
+									"    if (jsonData.success && jsonData.data && jsonData.data.length > 0) {",
+									"        // Set the first role ID automatically (useful for invitations)",
+									"        const firstRole = jsonData.data[0];",
+									"        pm.collectionVariables.set(\"roleId\", firstRole.id);",
+									"        console.log(\"✅ Role ID set to:\", firstRole.id);",
+									"        console.log(\"Role name:\", firstRole.name);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							},
+							{
+								"key": "x-workspace-id",
+								"value": "{{workspaceId}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/workspaces/roles",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "workspaces", "roles"]
+						}
+					}
+				},
+				{
+					"name": "Create Role",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							},
+							{
+								"key": "x-workspace-id",
+								"value": "{{workspaceId}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Content Creator\",\n  \"description\": \"Can create and edit posts\",\n  \"permissionIds\": [\"permission-uuid-1\", \"permission-uuid-2\"]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/workspaces/roles",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "workspaces", "roles"]
+						}
+					}
+				},
+				{
+					"name": "Update Role",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							},
+							{
+								"key": "x-workspace-id",
+								"value": "{{workspaceId}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Updated Role Name\",\n  \"description\": \"Updated description\",\n  \"permissionIds\": [\"permission-uuid-1\"]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/workspaces/roles/:roleId",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "workspaces", "roles", ":roleId"],
+							"variable": [
+								{
+									"key": "roleId",
+									"value": "role-uuid-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Delete Role",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							},
+							{
+								"key": "x-workspace-id",
+								"value": "{{workspaceId}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/workspaces/roles/:roleId",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "workspaces", "roles", ":roleId"],
+							"variable": [
+								{
+									"key": "roleId",
+									"value": "role-uuid-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Permissions",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							},
+							{
+								"key": "x-workspace-id",
+								"value": "{{workspaceId}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/workspaces/permissions",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "workspaces", "permissions"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Clients",
+			"item": [
+				{
+					"name": "Create Client",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							},
+							{
+								"key": "x-workspace-id",
+								"value": "{{workspaceId}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Acme Corporation\",\n  \"email\": \"contact@acme.com\",\n  \"phone\": \"+1234567890\",\n  \"company\": \"Acme Corp\",\n  \"notes\": \"Important client notes\",\n  \"hasPortalAccess\": true\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/clients",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "clients"]
+						}
+					}
+				},
+				{
+					"name": "Get Clients",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							},
+							{
+								"key": "x-workspace-id",
+								"value": "{{workspaceId}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/clients?search=&isActive=true&page=1&limit=20",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "clients"],
+							"query": [
+								{
+									"key": "search",
+									"value": ""
+								},
+								{
+									"key": "isActive",
+									"value": "true"
+								},
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "20"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Client",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							},
+							{
+								"key": "x-workspace-id",
+								"value": "{{workspaceId}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/clients/:clientId",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "clients", ":clientId"],
+							"variable": [
+								{
+									"key": "clientId",
+									"value": "client-uuid-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Client with Brands",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							},
+							{
+								"key": "x-workspace-id",
+								"value": "{{workspaceId}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/clients/:clientId/full",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "clients", ":clientId", "full"],
+							"variable": [
+								{
+									"key": "clientId",
+									"value": "client-uuid-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Update Client",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							},
+							{
+								"key": "x-workspace-id",
+								"value": "{{workspaceId}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Updated Client Name\",\n  \"email\": \"newemail@acme.com\",\n  \"phone\": \"+1234567890\",\n  \"company\": \"Updated Company\",\n  \"notes\": \"Updated notes\",\n  \"logoUrl\": \"https://example.com/logo.png\",\n  \"hasPortalAccess\": false,\n  \"isActive\": true\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/clients/:clientId",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "clients", ":clientId"],
+							"variable": [
+								{
+									"key": "clientId",
+									"value": "client-uuid-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Delete Client",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							},
+							{
+								"key": "x-workspace-id",
+								"value": "{{workspaceId}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/clients/:clientId",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "clients", ":clientId"],
+							"variable": [
+								{
+									"key": "clientId",
+									"value": "client-uuid-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Grant Member Access",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							},
+							{
+								"key": "x-workspace-id",
+								"value": "{{workspaceId}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/clients/:clientId/access/:memberId",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "clients", ":clientId", "access", ":memberId"],
+							"variable": [
+								{
+									"key": "clientId",
+									"value": "client-uuid-here"
+								},
+								{
+									"key": "memberId",
+									"value": "member-uuid-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Revoke Member Access",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							},
+							{
+								"key": "x-workspace-id",
+								"value": "{{workspaceId}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/clients/:clientId/access/:memberId",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "clients", ":clientId", "access", ":memberId"],
+							"variable": [
+								{
+									"key": "clientId",
+									"value": "client-uuid-here"
+								},
+								{
+									"key": "memberId",
+									"value": "member-uuid-here"
+								}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Brands",
+			"item": [
+				{
+					"name": "Create Brand",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							},
+							{
+								"key": "x-workspace-id",
+								"value": "{{workspaceId}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"clientId\": \"client-uuid-here\",\n  \"name\": \"Brand Name\",\n  \"description\": \"Brand description\",\n  \"colorPrimary\": \"#FF5733\",\n  \"colorSecondary\": \"#33FF57\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/brands",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "brands"]
+						}
+					}
+				},
+				{
+					"name": "Get Brands",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							},
+							{
+								"key": "x-workspace-id",
+								"value": "{{workspaceId}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/brands?clientId=&search=&isActive=true&page=1&limit=20",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "brands"],
+							"query": [
+								{
+									"key": "clientId",
+									"value": ""
+								},
+								{
+									"key": "search",
+									"value": ""
+								},
+								{
+									"key": "isActive",
+									"value": "true"
+								},
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "20"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Brand",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							},
+							{
+								"key": "x-workspace-id",
+								"value": "{{workspaceId}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/brands/:brandId",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "brands", ":brandId"],
+							"variable": [
+								{
+									"key": "brandId",
+									"value": "brand-uuid-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Brand with Accounts",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							},
+							{
+								"key": "x-workspace-id",
+								"value": "{{workspaceId}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/brands/:brandId/full",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "brands", ":brandId", "full"],
+							"variable": [
+								{
+									"key": "brandId",
+									"value": "brand-uuid-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Update Brand",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							},
+							{
+								"key": "x-workspace-id",
+								"value": "{{workspaceId}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Updated Brand Name\",\n  \"description\": \"Updated description\",\n  \"logoUrl\": \"https://example.com/logo.png\",\n  \"colorPrimary\": \"#FF0000\",\n  \"colorSecondary\": \"#00FF00\",\n  \"isActive\": true\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/brands/:brandId",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "brands", ":brandId"],
+							"variable": [
+								{
+									"key": "brandId",
+									"value": "brand-uuid-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Delete Brand",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							},
+							{
+								"key": "x-workspace-id",
+								"value": "{{workspaceId}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/brands/:brandId",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "brands", ":brandId"],
+							"variable": [
+								{
+									"key": "brandId",
+									"value": "brand-uuid-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Grant Member Access",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							},
+							{
+								"key": "x-workspace-id",
+								"value": "{{workspaceId}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/brands/:brandId/access/:memberId",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "brands", ":brandId", "access", ":memberId"],
+							"variable": [
+								{
+									"key": "brandId",
+									"value": "brand-uuid-here"
+								},
+								{
+									"key": "memberId",
+									"value": "member-uuid-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Revoke Member Access",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							},
+							{
+								"key": "x-workspace-id",
+								"value": "{{workspaceId}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/brands/:brandId/access/:memberId",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "brands", ":brandId", "access", ":memberId"],
+							"variable": [
+								{
+									"key": "brandId",
+									"value": "brand-uuid-here"
+								},
+								{
+									"key": "memberId",
+									"value": "member-uuid-here"
+								}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Platforms",
+			"item": [
+				{
+					"name": "Get Supported Platforms",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							},
+							{
+								"key": "x-workspace-id",
+								"value": "{{workspaceId}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/platforms/supported",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "platforms", "supported"]
+						}
+					}
+				},
+				{
+					"name": "Get Auth URL",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							},
+							{
+								"key": "x-workspace-id",
+								"value": "{{workspaceId}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/platforms/auth-url?platform=facebook&brandId=brand-uuid",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "platforms", "auth-url"],
+							"query": [
+								{
+									"key": "platform",
+									"value": "facebook",
+									"description": "facebook, twitter, linkedin, google"
+								},
+								{
+									"key": "brandId",
+									"value": "brand-uuid"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "OAuth Callback",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/platforms/callback?code=oauth-code&state=state-token",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "platforms", "callback"],
+							"query": [
+								{
+									"key": "code",
+									"value": "oauth-code"
+								},
+								{
+									"key": "state",
+									"value": "state-token"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Social Accounts",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							},
+							{
+								"key": "x-workspace-id",
+								"value": "{{workspaceId}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/platforms/accounts?brandId=brand-uuid",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "platforms", "accounts"],
+							"query": [
+								{
+									"key": "brandId",
+									"value": "brand-uuid"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Disconnect Account",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							},
+							{
+								"key": "x-workspace-id",
+								"value": "{{workspaceId}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/platforms/accounts/:accountId/disconnect",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "platforms", "accounts", ":accountId", "disconnect"],
+							"variable": [
+								{
+									"key": "accountId",
+									"value": "account-uuid-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Sync Account",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							},
+							{
+								"key": "x-workspace-id",
+								"value": "{{workspaceId}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/platforms/accounts/:accountId/sync",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "platforms", "accounts", ":accountId", "sync"],
+							"variable": [
+								{
+									"key": "accountId",
+									"value": "account-uuid-here"
+								}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Posts",
+			"item": [
+				{
+					"name": "Create Post",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							},
+							{
+								"key": "x-workspace-id",
+								"value": "{{workspaceId}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"brandId\": \"brand-uuid-here\",\n  \"title\": \"Post Title\",\n  \"content\": \"Post content goes here\",\n  \"socialAccountIds\": [\"account-uuid-1\", \"account-uuid-2\"],\n  \"mediaIds\": [\"media-uuid-1\"],\n  \"scheduledAt\": \"2024-12-31T12:00:00Z\",\n  \"platformOverrides\": [\n    {\n      \"socialAccountId\": \"account-uuid-1\",\n      \"content\": \"Platform-specific content\"\n    }\n  ]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/posts",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "posts"]
+						}
+					}
+				},
+				{
+					"name": "Get Posts",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							},
+							{
+								"key": "x-workspace-id",
+								"value": "{{workspaceId}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/posts?brandId=&status=&search=&startDate=&endDate=&page=1&limit=20",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "posts"],
+							"query": [
+								{
+									"key": "brandId",
+									"value": ""
+								},
+								{
+									"key": "status",
+									"value": "",
+									"description": "DRAFT, PENDING_APPROVAL, APPROVED, SCHEDULED, PUBLISHING, PUBLISHED, FAILED, CANCELLED"
+								},
+								{
+									"key": "search",
+									"value": ""
+								},
+								{
+									"key": "startDate",
+									"value": ""
+								},
+								{
+									"key": "endDate",
+									"value": ""
+								},
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "20"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Post",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							},
+							{
+								"key": "x-workspace-id",
+								"value": "{{workspaceId}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/posts/:postId",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "posts", ":postId"],
+							"variable": [
+								{
+									"key": "postId",
+									"value": "post-uuid-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Update Post",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							},
+							{
+								"key": "x-workspace-id",
+								"value": "{{workspaceId}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"Updated Post Title\",\n  \"content\": \"Updated post content\",\n  \"scheduledAt\": \"2024-12-31T15:00:00Z\",\n  \"platformOverrides\": [\n    {\n      \"socialAccountId\": \"account-uuid-1\",\n      \"content\": \"Updated platform-specific content\"\n    }\n  ]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/posts/:postId",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "posts", ":postId"],
+							"variable": [
+								{
+									"key": "postId",
+									"value": "post-uuid-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Delete Post",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							},
+							{
+								"key": "x-workspace-id",
+								"value": "{{workspaceId}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/posts/:postId",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "posts", ":postId"],
+							"variable": [
+								{
+									"key": "postId",
+									"value": "post-uuid-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Submit for Approval",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							},
+							{
+								"key": "x-workspace-id",
+								"value": "{{workspaceId}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/posts/:postId/submit",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "posts", ":postId", "submit"],
+							"variable": [
+								{
+									"key": "postId",
+									"value": "post-uuid-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Approve/Reject Post",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							},
+							{
+								"key": "x-workspace-id",
+								"value": "{{workspaceId}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"status\": \"APPROVED\",\n  \"comment\": \"Looks good!\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/posts/:postId/approve",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "posts", ":postId", "approve"],
+							"variable": [
+								{
+									"key": "postId",
+									"value": "post-uuid-here"
+								}
+							],
+							"description": "Status can be: APPROVED, REJECTED, CHANGES_REQUESTED"
+						}
+					}
+				},
+				{
+					"name": "Schedule Post",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							},
+							{
+								"key": "x-workspace-id",
+								"value": "{{workspaceId}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/posts/:postId/schedule",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "posts", ":postId", "schedule"],
+							"variable": [
+								{
+									"key": "postId",
+									"value": "post-uuid-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Add Comment",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							},
+							{
+								"key": "x-workspace-id",
+								"value": "{{workspaceId}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"content\": \"This is a comment\",\n  \"parentId\": \"parent-comment-uuid\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/posts/:postId/comments",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "posts", ":postId", "comments"],
+							"variable": [
+								{
+									"key": "postId",
+									"value": "post-uuid-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Delete Comment",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							},
+							{
+								"key": "x-workspace-id",
+								"value": "{{workspaceId}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/posts/:postId/comments/:commentId",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "posts", ":postId", "comments", ":commentId"],
+							"variable": [
+								{
+									"key": "postId",
+									"value": "post-uuid-here"
+								},
+								{
+									"key": "commentId",
+									"value": "comment-uuid-here"
+								}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Calendar",
+			"item": [
+				{
+					"name": "Create Event",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							},
+							{
+								"key": "x-workspace-id",
+								"value": "{{workspaceId}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"brandId\": \"brand-uuid-here\",\n  \"title\": \"Event Title\",\n  \"description\": \"Event description\",\n  \"type\": \"MEETING\",\n  \"startAt\": \"2024-12-31T10:00:00Z\",\n  \"endAt\": \"2024-12-31T11:00:00Z\",\n  \"allDay\": false,\n  \"color\": \"#FF5733\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/calendar",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "calendar"]
+						}
+					}
+				},
+				{
+					"name": "Get Events",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							},
+							{
+								"key": "x-workspace-id",
+								"value": "{{workspaceId}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/calendar?startDate=2024-01-01T00:00:00Z&endDate=2024-12-31T23:59:59Z&brandId=&clientId=&type=&includeScheduledPosts=true",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "calendar"],
+							"query": [
+								{
+									"key": "startDate",
+									"value": "2024-01-01T00:00:00Z"
+								},
+								{
+									"key": "endDate",
+									"value": "2024-12-31T23:59:59Z"
+								},
+								{
+									"key": "brandId",
+									"value": ""
+								},
+								{
+									"key": "clientId",
+									"value": ""
+								},
+								{
+									"key": "type",
+									"value": "",
+									"description": "POST_SCHEDULED, POST_PUBLISHED, MEETING, DEADLINE, MILESTONE, REMINDER"
+								},
+								{
+									"key": "includeScheduledPosts",
+									"value": "true"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Event",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							},
+							{
+								"key": "x-workspace-id",
+								"value": "{{workspaceId}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/calendar/:eventId",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "calendar", ":eventId"],
+							"variable": [
+								{
+									"key": "eventId",
+									"value": "event-uuid-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Update Event",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							},
+							{
+								"key": "x-workspace-id",
+								"value": "{{workspaceId}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"Updated Event Title\",\n  \"description\": \"Updated description\",\n  \"type\": \"DEADLINE\",\n  \"startAt\": \"2024-12-31T12:00:00Z\",\n  \"endAt\": \"2024-12-31T13:00:00Z\",\n  \"allDay\": true,\n  \"color\": \"#00FF00\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/calendar/:eventId",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "calendar", ":eventId"],
+							"variable": [
+								{
+									"key": "eventId",
+									"value": "event-uuid-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Delete Event",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							},
+							{
+								"key": "x-workspace-id",
+								"value": "{{workspaceId}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/calendar/:eventId",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "calendar", ":eventId"],
+							"variable": [
+								{
+									"key": "eventId",
+									"value": "event-uuid-here"
+								}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Reviews",
+			"item": [
+				{
+					"name": "Verify Review Link",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"password\": \"optional-password\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/reviews/verify/:token",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "reviews", "verify", ":token"],
+							"variable": [
+								{
+									"key": "token",
+									"value": "review-token-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Client Pending Posts",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/reviews/portal/:token/posts",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "reviews", "portal", ":token", "posts"],
+							"variable": [
+								{
+									"key": "token",
+									"value": "review-token-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Create Review Link",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							},
+							{
+								"key": "x-workspace-id",
+								"value": "{{workspaceId}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"postId\": \"post-uuid-here\",\n  \"clientId\": \"client-uuid-here\",\n  \"name\": \"Review Link Name\",\n  \"expiresAt\": \"2024-12-31T23:59:59Z\",\n  \"password\": \"secure-password\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/reviews",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "reviews"]
+						}
+					}
+				},
+				{
+					"name": "Get Review Links",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							},
+							{
+								"key": "x-workspace-id",
+								"value": "{{workspaceId}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/reviews",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "reviews"]
+						}
+					}
+				},
+				{
+					"name": "Get Review Link",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							},
+							{
+								"key": "x-workspace-id",
+								"value": "{{workspaceId}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/reviews/:linkId",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "reviews", ":linkId"],
+							"variable": [
+								{
+									"key": "linkId",
+									"value": "link-uuid-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Update Review Link",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							},
+							{
+								"key": "x-workspace-id",
+								"value": "{{workspaceId}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Updated Review Link Name\",\n  \"expiresAt\": \"2025-01-31T23:59:59Z\",\n  \"isActive\": true\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/reviews/:linkId",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "reviews", ":linkId"],
+							"variable": [
+								{
+									"key": "linkId",
+									"value": "link-uuid-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Delete Review Link",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							},
+							{
+								"key": "x-workspace-id",
+								"value": "{{workspaceId}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/reviews/:linkId",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "reviews", ":linkId"],
+							"variable": [
+								{
+									"key": "linkId",
+									"value": "link-uuid-here"
+								}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Media",
+			"item": [
+				{
+					"name": "Upload File",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							},
+							{
+								"key": "x-workspace-id",
+								"value": "{{workspaceId}}"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": []
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/media/upload",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "media", "upload"]
+						}
+					}
+				},
+				{
+					"name": "Upload Multiple Files",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							},
+							{
+								"key": "x-workspace-id",
+								"value": "{{workspaceId}}"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "files",
+									"type": "file",
+									"src": []
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/media/upload/multiple",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "media", "upload", "multiple"]
+						},
+						"description": "Upload up to 10 files at once"
+					}
+				},
+				{
+					"name": "Get Media Files",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							},
+							{
+								"key": "x-workspace-id",
+								"value": "{{workspaceId}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/media",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "media"]
+						}
+					}
+				},
+				{
+					"name": "Get Media File",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							},
+							{
+								"key": "x-workspace-id",
+								"value": "{{workspaceId}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/media/:mediaId",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "media", ":mediaId"],
+							"variable": [
+								{
+									"key": "mediaId",
+									"value": "media-uuid-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Delete Media File",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							},
+							{
+								"key": "x-workspace-id",
+								"value": "{{workspaceId}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/media/:mediaId",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "media", ":mediaId"],
+							"variable": [
+								{
+									"key": "mediaId",
+									"value": "media-uuid-here"
+								}
+							]
+						}
+					}
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost",
+			"type": "string"
+		},
+		{
+			"key": "authToken",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "refreshToken",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "workspaceId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "roleId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "invitationToken",
+			"value": "",
+			"type": "string"
+		}
+	]
+}
+

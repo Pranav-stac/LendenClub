@@ -1,0 +1,115 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+  z-index: var(--z-modal);
+  animation: fadeIn 0.2s ease-out;
+}
+
+@media (max-width: 768px) {
+  .overlay {
+    padding: var(--space-2);
+    align-items: flex-end;
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.modal {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-2xl);
+  max-height: calc(100vh - var(--space-8));
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.2s ease-out;
+  width: 100%;
+  max-width: 90vw;
+}
+
+@media (max-width: 768px) {
+  .modal {
+    max-height: calc(100vh - var(--space-4));
+    border-radius: var(--radius-lg);
+  }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.sm { width: 100%; max-width: 400px; }
+.md { width: 100%; max-width: 500px; }
+.lg { width: 100%; max-width: 700px; }
+.xl { width: 100%; max-width: 900px; }
+.full { width: calc(100vw - var(--space-8)); height: calc(100vh - var(--space-8)); max-width: none; }
+
+@media (max-width: 768px) {
+  .sm, .md, .lg, .xl {
+    max-width: calc(100vw - var(--space-4));
+  }
+  
+  .full {
+    width: calc(100vw - var(--space-4));
+    height: calc(100vh - var(--space-4));
+  }
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-4) var(--space-6);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+@media (max-width: 768px) {
+  .header {
+    padding: var(--space-3) var(--space-4);
+  }
+
+  .title {
+    font-size: 1rem;
+  }
+}
+
+.title {
+  font-size: var(--text-lg);
+  font-weight: var(--font-semibold);
+}
+
+.closeBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--duration-fast);
+}
+
+.closeBtn:hover {
+  background: var(--interactive-hover);
+  color: var(--text-primary);
+}
+
+.content {
+  flex: 1;
+  overflow-y: auto;
+}
+
+

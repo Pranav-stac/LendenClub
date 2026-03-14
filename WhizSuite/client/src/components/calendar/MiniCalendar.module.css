@@ -1,0 +1,77 @@
+.miniCalendar {
+    background: var(--surface-hover);
+    border-radius: var(--radius-lg);
+    padding: 16px;
+    width: 100%;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    marginBottom: 16px;
+}
+
+.monthTitle {
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.navBtn {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+}
+
+.navBtn:hover {
+    background: var(--interactive-hover);
+}
+
+.weekHeaders {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    text-align: center;
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+}
+
+.daysGrid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+}
+
+.dayCell {
+    aspect-ratio: 1/1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    border-radius: 50%;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.2s;
+}
+
+.activeDay:hover {
+    background: var(--interactive-hover);
+}
+
+.today {
+    background: var(--primary-500) !important;
+    color: white;
+}
+
+.eventDot {
+    position: absolute;
+    bottom: 4px;
+    width: 4px;
+    height: 4px;
+    background: var(--info-base);
+    border-radius: 50%;
+}

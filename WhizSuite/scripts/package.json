@@ -1,0 +1,17 @@
+{
+  "name": "whizsuite-ai-remediation",
+  "version": "1.0.0",
+  "description": "AI-powered Terraform security remediation using Gemini",
+  "type": "module",
+  "main": "ai-remediation.js",
+  "scripts": {
+    "remediate": "node ai-remediation.js",
+    "start": "node ai-remediation.js"
+  },
+  "dependencies": {
+    "@google/genai": "^1.45.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
