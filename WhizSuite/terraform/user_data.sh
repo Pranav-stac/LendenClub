@@ -51,14 +51,19 @@ fi
 # ─────────────────────────────────────────────
 cd $APP_HOME
 git clone ${github_repo_url} whizsuite
-cd whizsuite/WhizSuite
+# Support both LendenClub/WhizSuite and flat repo structure
+APP_DIR="whizsuite/WhizSuite"
+[ -d "$APP_DIR" ] || APP_DIR="whizsuite"
+cd $APP_DIR
 
 # ─────────────────────────────────────────────
 # 3. Create .env from Terraform variables
 # (IMDSv2 required - instance has http_tokens=required)
+# Uses port 80 – nginx serves app directly at http://IP
 # ─────────────────────────────────────────────
-TOKEN=$(curl -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600" -s)
-PUBLIC_IP=$(curl -H "X-aws-ec2-metadata-token: $TOKEN" -s http://169.254.169.254/latest/meta-data/public-ipv4)
+TOKEN=$(curl -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600" -s 2>/dev/null || echo "")
+PUBLIC_IP=$(curl -H "X-aws-ec2-metadata-token: $TOKEN" -s http://169.254.169.254/latest/meta-data/public-ipv4 2>/dev/null || echo "localhost")
+APP_URL="http://$${PUBLIC_IP}"
 
 cat > .env <<EOF
 NODE_ENV=production
@@ -70,19 +75,24 @@ JWT_SECRET=${jwt_secret}
 JWT_EXPIRES_IN=7d
 JWT_REFRESH_SECRET=${jwt_secret}_refresh
 JWT_REFRESH_EXPIRES_IN=30d
-FRONTEND_URL=http://$${PUBLIC_IP}:3000
-BACKEND_URL=http://$${PUBLIC_IP}:5000
-NEXT_PUBLIC_API_URL=http://$${PUBLIC_IP}:5000/api
+FRONTEND_URL=$${APP_URL}
+BACKEND_URL=$${APP_URL}
+NEXT_PUBLIC_API_URL=$${APP_URL}/api
 USE_LOCAL_STORAGE=false
 EOF
 
 # ─────────────────────────────────────────────
-# 4. Start the application
+# 4. Start the application (retry on transient failures)
 # ─────────────────────────────────────────────
-if command -v docker-compose &>/dev/null; then
-  docker-compose up -d --build
-else
-  docker compose up -d --build
-fi
+COMPOSE_CMD="docker-compose"
+command -v docker-compose &>/dev/null || COMPOSE_CMD="docker compose"
 
-echo "WhizSuite started. Access at http://$${PUBLIC_IP}:3000"
+for i in 1 2 3; do
+  $COMPOSE_CMD up -d --build 2>&1 | tee -a /var/log/whizsuite-startup.log
+  sleep 30
+  if docker ps | grep -q whizsuite_nginx; then
+    echo "WhizSuite started. Access at http://$${PUBLIC_IP}" | tee -a /var/log/whizsuite-startup.log
+    break
+  fi
+  echo "Retry $i/3 – waiting for containers..." | tee -a /var/log/whizsuite-startup.log
+done

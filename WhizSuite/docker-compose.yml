@@ -94,6 +94,21 @@ services:
       server:
         condition: service_healthy
 
+  # Nginx – reverse proxy on port 80 for direct access (http://IP)
+  nginx:
+    image: nginx:alpine
+    container_name: whizsuite_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      client:
+        condition: service_started
+      server:
+        condition: service_healthy
+
 volumes:
   postgres_data:
   redis_data:
