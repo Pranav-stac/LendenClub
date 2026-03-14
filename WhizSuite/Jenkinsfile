@@ -408,6 +408,16 @@ pipeline {
                                         echo "Initialising Terraform..."
                                         terraform init -input=false
                                         echo ""
+                                        echo "Importing existing resources (if any, for reruns without S3)..."
+                                        SG_ID=\$(aws ec2 describe-security-groups --group-names whizsuite-sg --query 'SecurityGroups[0].GroupId' --output text --region ap-south-1 2>/dev/null || echo "")
+                                        if [ -n "\$SG_ID" ] && [ "\$SG_ID" != "None" ]; then
+                                            terraform import -input=false aws_security_group.whizsuite_sg "\$SG_ID" 2>/dev/null || true
+                                        fi
+                                        INSTANCE_ID=\$(aws ec2 describe-instances --filters "Name=tag:Name,Values=whizsuite-server" "Name=instance-state-name,Values=running,pending" --query 'Reservations[0].Instances[0].InstanceId' --output text --region ap-south-1 2>/dev/null || echo "")
+                                        if [ -n "\$INSTANCE_ID" ] && [ "\$INSTANCE_ID" != "None" ]; then
+                                            terraform import -input=false aws_instance.whizsuite_app "\$INSTANCE_ID" 2>/dev/null || true
+                                        fi
+                                        echo ""
                                         echo "Running Terraform plan..."
                                         terraform plan -input=false -out=tfplan \
                                             -var="aws_region=ap-south-1" \
@@ -572,12 +582,8 @@ pipeline {
         }
 
         always {
-            cleanWs(cleanWhenNotBuilt: false,
-                    deleteDirs: true,
-                    disableDeferredWipeout: true,
-                    notFailBuild: true,
-                    patterns: [[pattern: '.gitignore', type: 'INCLUDE'],
-                               [pattern: '.propsfile', type: 'EXCLUDE']])
+            // Skip cleanWs – preserves terraform.tfstate so Terraform knows existing resources
+            // (avoids "security group already exists" on re-runs without S3 backend)
         }
     }
 }
