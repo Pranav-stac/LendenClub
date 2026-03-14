@@ -9,13 +9,19 @@ resource "aws_instance" "whizsuite_app" {
   key_name               = var.key_name
   vpc_security_group_ids = [aws_security_group.whizsuite_sg.id]
 
-  # Root EBS volume
+  # IMDS v2 required (Trivy AWS-0028)
+  metadata_options {
+    http_endpoint               = "enabled"
+    http_tokens                 = "required"
+    http_put_response_hop_limit  = 1
+  }
+
+  # Root EBS volume – encrypted (Trivy AWS-0131)
   root_block_device {
     volume_size           = 20
     volume_type           = "gp3"
     delete_on_termination = true
-    # NOTE: encrypted = false is another intentional weakness Trivy will flag
-    encrypted = false
+    encrypted             = true
   }
 
   # User-data: bootstrap Docker and launch WhizSuite

@@ -238,29 +238,31 @@ pipeline {
         // Skips gracefully if GEMINI_API_KEY is not configured.
         // ─────────────────────────────────────────────────────────
         stage('AI Remediation') {
-            steps {
-                echo '========== STAGE 4: AI Remediation (Gemini 2.5 Flash) =========='
-                dir('WhizSuite/scripts') {
-                    script {
-                        if (isUnix()) {
-                            sh 'npm install && node ai-remediation.js'
-                        } else {
-                            powershell '''
-                                $toolsDir = "$env:WORKSPACE\\.tools"
-                                if (Test-Path "$toolsDir\node-v20*") {
-                                    $nodeDir = Get-ChildItem "$toolsDir\node-v20*" -Directory | Select-Object -First 1
-                                    $env:PATH = "$($nodeDir.FullName);$env:PATH"
-                                }
-                                npm install; node ai-remediation.js
-                            '''
-                        }
-                    }
-                }
-            }
             environment {
                 WORKSPACE_ROOT = "${env.WORKSPACE}"
                 REPORT_FILE    = "trivy-report.txt"
                 TERRAFORM_DIR  = "WhizSuite/terraform"
+            }
+            steps {
+                echo '========== STAGE 4: AI Remediation (Gemini 2.5 Flash) =========='
+                withCredentials([string(credentialsId: 'gemini-api-key', variable: 'GEMINI_API_KEY')]) {
+                    dir('WhizSuite/scripts') {
+                        script {
+                            if (isUnix()) {
+                                sh 'npm install && node ai-remediation.js'
+                            } else {
+                                powershell '''
+                                    $toolsDir = "$env:WORKSPACE\\.tools"
+                                    if (Test-Path "$toolsDir\node-v20*") {
+                                        $nodeDir = Get-ChildItem "$toolsDir\node-v20*" -Directory | Select-Object -First 1
+                                        $env:PATH = "$($nodeDir.FullName);$env:PATH"
+                                    }
+                                    npm install; node ai-remediation.js
+                                '''
+                            }
+                        }
+                    }
+                }
             }
         }
 

@@ -1,27 +1,19 @@
 # ===========================================================
 # SECURITY GROUP – WhizSuite Application
-#
-#   INTENTIONAL VULNERABILITY (assignment requirement):
-#     SSH port 22 is open to the entire internet (0.0.0.0/0).
-#     This will be flagged by Trivy as a HIGH/CRITICAL finding.
-#     It will be remediated after the first Jenkins pipeline run
-#     using AI-assisted analysis.
+# (Remediated: SSH restricted to admin_ip, egress narrowed)
 # ===========================================================
 
 resource "aws_security_group" "whizsuite_sg" {
   name        = "${var.app_name}-sg"
   description = "Security group for WhizSuite application server"
 
-  # -------------------------------------------------------
-  # VULNERABILITY: SSH open to the world
-  # Trivy check: AVD-AWS-0107 / aws-ec2-no-public-ingress-sgr
-  # -------------------------------------------------------
+  # SSH restricted (Trivy AWS-0107) – 10.0.0.1/32 for VPC-only; change for public SSH
   ingress {
-    description = "SSH – INSECURE: open to all IPs (to be remediated)"
+    description = "SSH – restricted"
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]  # VULNERABILITY – must restrict to known IP
+    cidr_blocks = ["10.0.0.1/32"]
   }
 
   # HTTP access for Next.js client
@@ -51,12 +43,33 @@ resource "aws_security_group" "whizsuite_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  # Allow all outbound traffic
+  # Egress restricted (Trivy AWS-0104) – HTTPS, HTTP, DNS
   egress {
-    description = "Allow all outbound traffic"
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
+    description = "HTTPS outbound"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  egress {
+    description = "HTTP outbound"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  egress {
+    description = "DNS"
+    from_port   = 53
+    to_port     = 53
+    protocol    = "udp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  egress {
+    description = "PostgreSQL (RDS)"
+    from_port   = 5432
+    to_port     = 5432
+    protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
 

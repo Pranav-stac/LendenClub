@@ -79,6 +79,7 @@ function applyTerraformFix(args) {
 
 async function main() {
   if (!GEMINI_API_KEY) {
+    console.log('[AI Remediation] GEMINI_API_KEY not set – skipping. Add it in Jenkins to enable AI fixes.');
     process.exit(0);
   }
 
