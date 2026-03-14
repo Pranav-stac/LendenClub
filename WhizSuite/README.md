@@ -4,6 +4,12 @@ A full-stack social media management SaaS platform, containerised and deployed t
 
 ---
 
+## Assignment Compliance
+
+This project fulfils the DevOps assignment requirements. See **[docs/ASSIGNMENT_COMPLIANCE.md](docs/ASSIGNMENT_COMPLIANCE.md)** for a requirements checklist and demo instructions.
+
+---
+
 ## Table of Contents
 
 1. [Project Overview](#project-overview)

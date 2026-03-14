@@ -1,6 +1,10 @@
 pipeline {
     agent any
 
+    parameters {
+        string(name: 'GITHUB_REPO_URL', defaultValue: 'https://github.com/Pranav-stac/LendenClub', description: 'Git repo URL for EC2 to clone (must contain WhizSuite/)')
+    }
+
     environment {
         TRIVY_VERSION   = "0.69.3"
         TF_VERSION      = "1.7.0"
@@ -320,26 +324,28 @@ pipeline {
                         ]) {
                             dir("${TERRAFORM_DIR}") {
                                 if (isUnix()) {
-                                    sh '''
+                                    sh """
                                         echo "Initialising Terraform..."
                                         terraform init -input=false
                                         echo ""
                                         echo "Running Terraform plan..."
-                                        terraform plan -input=false -out=tfplan -var="aws_region=ap-south-1"
+                                        terraform plan -input=false -out=tfplan \
+                                            -var="aws_region=ap-south-1" \
+                                            -var="github_repo_url=${params.GITHUB_REPO_URL}"
                                         echo ""
                                         echo "Terraform plan complete. Review output above before applying."
-                                    '''
+                                    """
                                 } else {
-                                    powershell '''
-                                        $env:PATH = "$env:WORKSPACE\\.tools;$env:PATH"
+                                    powershell """
+                                        \$env:PATH = \"\$env:WORKSPACE\\.tools;\$env:PATH\"
                                         Write-Host "Initialising Terraform..."
                                         terraform init -input=false
                                         Write-Host ""
                                         Write-Host "Running Terraform plan..."
-                                        terraform plan -input=false -out=tfplan -var="aws_region=ap-south-1"
+                                        terraform plan -input=false -out=tfplan -var=\"aws_region=ap-south-1\" -var=\"github_repo_url=${params.GITHUB_REPO_URL}\"
                                         Write-Host ""
                                         Write-Host "Terraform plan complete. Review output above before applying."
-                                    '''
+                                    """
                                 }
                             }
                         }
@@ -381,6 +387,78 @@ pipeline {
             post {
                 always {
                     archiveArtifacts artifacts: "${TERRAFORM_DIR}/tfplan", allowEmptyArchive: true
+                }
+            }
+        }
+
+        // ─────────────────────────────────────────────────────────
+        // STAGE 7 – Terraform Apply (Automatic AWS Deployment)
+        // Deploys EC2 + security group to AWS when plan succeeded with credentials.
+        // EC2 user-data clones repo and runs docker-compose – app goes live.
+        // ─────────────────────────────────────────────────────────
+        stage('Terraform Apply') {
+            steps {
+                echo '========== STAGE 7: Terraform Apply (Automatic Deployment) =========='
+                script {
+                    def applyCredError = null
+                    try {
+                        withCredentials([
+                            usernamePassword(
+                                credentialsId: 'aws-terraform-credentials',
+                                usernameVariable: 'AWS_ACCESS_KEY_ID',
+                                passwordVariable: 'AWS_SECRET_ACCESS_KEY'
+                            )
+                        ]) {
+                            dir("${TERRAFORM_DIR}") {
+                                if (fileExists('tfplan')) {
+                                    if (isUnix()) {
+                                        sh '''
+                                            echo "Applying Terraform plan – deploying to AWS..."
+                                            terraform apply -input=false -auto-approve tfplan
+                                            echo ""
+                                            echo "========== DEPLOYMENT COMPLETE =========="
+                                            terraform output -json 2>/dev/null || true
+                                            echo ""
+                                            echo "App URL:  $(terraform output -raw app_url 2>/dev/null || echo 'Check terraform output')"
+                                            echo "API URL:  $(terraform output -raw api_url 2>/dev/null || echo 'Check terraform output')"
+                                            echo "Public IP: $(terraform output -raw public_ip 2>/dev/null || echo 'Check terraform output')"
+                                        '''
+                                    } else {
+                                        powershell '''
+                                            $env:PATH = "$env:WORKSPACE\\.tools;$env:PATH"
+                                            Write-Host "Applying Terraform plan – deploying to AWS..."
+                                            terraform apply -input=false -auto-approve tfplan
+                                            Write-Host ""
+                                            Write-Host "========== DEPLOYMENT COMPLETE =========="
+                                            terraform output
+                                        '''
+                                    }
+                                } else {
+                                    echo 'No tfplan found – skipping apply. (Run with AWS credentials for full plan + deploy.)'
+                                }
+                            }
+                        }
+                    } catch (e) {
+                        if (e.message?.contains('Could not find credentials') || e.message?.contains('credentials entry')) {
+                            applyCredError = e
+                            echo ''
+                            echo 'AWS credentials not configured – skipping automatic deployment.'
+                            echo 'Add aws-terraform-credentials for full pipeline (plan + apply).'
+                        } else {
+                            throw e
+                        }
+                    }
+                }
+            }
+            post {
+                success {
+                    dir("${TERRAFORM_DIR}") {
+                        script {
+                            if (fileExists('tfplan') && isUnix()) {
+                                sh 'terraform output -json 2>/dev/null | head -50 || true'
+                            }
+                        }
+                    }
                 }
             }
         }
