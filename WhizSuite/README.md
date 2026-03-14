@@ -1,402 +1,429 @@
 # WhizSuite – DevOps Assignment
 
-A full-stack social media management SaaS platform, containerised and deployed to AWS with automated infrastructure security scanning via Jenkins CI/CD and AI-assisted vulnerability remediation.
-
----
-
-## Assignment Compliance
-
-This project fulfils the DevOps assignment requirements. See **[docs/ASSIGNMENT_COMPLIANCE.md](docs/ASSIGNMENT_COMPLIANCE.md)** for a requirements checklist and demo instructions.
+**Assignment:** DevSecOps with Infrastructure Security Scanning & AI Remediation  
+**Student:** Pranav Narkhede  
+**GitHub:** [https://github.com/Pranav-stac/LendenClub](https://github.com/Pranav-stac/LendenClub)  
+**Timeline:** 5 days
 
 ---
 
 ## Table of Contents
 
-1. [Project Overview](#project-overview)
-2. [Architecture](#architecture)
-3. [Tech Stack](#tech-stack)
-4. [Local Setup with Docker](#local-setup-with-docker)
-5. [Cloud Infrastructure (Terraform)](#cloud-infrastructure-terraform)
-6. [CI/CD Pipeline (Jenkins)](#cicd-pipeline-jenkins)
-7. [AI-Driven Security Remediation](#ai-driven-security-remediation)
-8. [Before & After Security Reports](#before--after-security-reports)
-9. [Application Screenshots](#application-screenshots)
-10. [How to Access the Live App](#how-to-access-the-live-app)
+1. [Project Overview](#1-project-overview)
+2. [Architecture](#2-architecture)
+3. [Cloud Provider & Tools](#3-cloud-provider--tools)
+4. [Requirements Checklist](#4-requirements-checklist)
+5. [Web Application & Docker](#5-web-application--docker)
+6. [Infrastructure as Code (Terraform)](#6-infrastructure-as-code-terraform)
+7. [CI/CD Pipeline (Jenkins)](#7-cicd-pipeline-jenkins)
+8. [AI-Driven Security Remediation](#8-ai-driven-security-remediation)
+9. [Before & After Security Reports](#9-before--after-security-reports)
+10. [AI Usage Log](#10-ai-usage-log-mandatory)
+11. [Application Running on Cloud](#11-application-running-on-cloud)
+12. [Submission Guidelines](#12-submission-guidelines)
 
 ---
 
-## Project Overview
+## 1. Project Overview
 
-WhizSuite is a multi-workspace social media management platform.  
-This submission demonstrates a complete DevOps workflow:
+**WhizSuite** is a full-stack social media management SaaS platform built with Node.js. This assignment demonstrates a complete DevSecOps workflow:
 
-- Application containerised with **Docker** (multi-stage builds)
-- Infrastructure provisioned on **AWS** with **Terraform**
-- A **Jenkins** pipeline that scans Terraform code with **Trivy** before any deployment
-- **AI-assisted remediation** to identify and fix a deliberate SSH security vulnerability
+- **Containerization:** Web application runs in Docker (Dockerfile + docker-compose.yml)
+- **Infrastructure as Code:** AWS resources provisioned with Terraform
+- **Security Scanning:** Trivy scans Terraform for misconfigurations before deployment
+- **AI Remediation:** Gemini API analyzes vulnerability reports and applies fixes
+- **CI/CD:** Jenkins pipeline automates checkout, scan, remediation, and Terraform plan/apply
 
 ---
 
-## Architecture
+## 2. Architecture
+
+### High-Level Architecture
 
 ```
-┌──────────────────────────────────────────────────────────────────┐
-│                         Local / Docker                           │
-│                                                                  │
-│  ┌──────────┐   ┌──────────┐   ┌───────────┐   ┌───────────┐  │
-│  │  client  │──▶│  server  │──▶│  postgres │   │   redis   │  │
-│  │ :3000    │   │  :5000   │   │  :5432    │   │  :6379    │  │
-│  └──────────┘   └──────────┘   └───────────┘   └───────────┘  │
-└──────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           JENKINS PIPELINE (Docker)                         │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  Stage 1: Checkout          →  Pull code from GitHub                        │
+│  Stage 2: Install Tools    →  Trivy, Terraform, Node.js, AWS CLI           │
+│  Stage 3: Security Scan    →  Trivy IaC scan (FAILS on initial run)        │
+│  Stage 4: AI Remediation    →  Gemini fixes Terraform + .trivyignore       │
+│  Stage 5: Security Re-scan  →  Trivy re-run (PASSES)                        │
+│  Stage 6: Terraform Plan    →  Generate execution plan                      │
+│  Stage 7: Terraform Apply   →  Deploy EC2 + Security Group to AWS           │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                        │
+                                        ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                              AWS CLOUD (ap-south-1)                         │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│   EC2 (t3.medium)                                                           │
+│   ├── User-data: Install Docker → Clone repo → docker-compose up            │
+│   └── Services:                                                             │
+│       ├── Next.js (client) :3000                                            │
+│       ├── Express API (server) :5000 ───────► AWS RDS PostgreSQL             │
+│       ├── Redis :6379                                                       │
+│       └── Nginx (reverse proxy) :80                                         │
+│                                                                             │
+│   Security Group (whizsuite-sg)                                             │
+│   ├── SSH (22)    → Restricted to ADMIN_IP only (post-remediation)          │
+│   ├── HTTP (80)   → 0.0.0.0/0 (public web access)                           │
+│   ├── Next.js (3000) → 0.0.0.0/0                                            │
+│   └── API (5000)  → 0.0.0.0/0                                               │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
 
-┌──────────────────────────────────────────────────────────────────┐
-│                        AWS Cloud                                 │
-│                                                                  │
-│  EC2 (t2.micro)                                                  │
-│  ├── Docker Compose                                              │
-│  │   ├── client  (:3000)                                         │
-│  │   ├── server  (:5000) ──── AWS RDS (PostgreSQL ap-south-1)   │
-│  │   └── redis   (:6379)                                         │
-│  └── Security Group (post-remediation: SSH restricted to VPN)   │
-│                                                                  │
-│  S3 Bucket: whizsuite (media file storage)                       │
-└──────────────────────────────────────────────────────────────────┘
+### Local Docker Architecture
 
-┌──────────────────────────────────────────────────────────────────┐
-│                     CI/CD Pipeline                               │
-│                                                                  │
-│  Jenkins (Docker) ──► Git Checkout                               │
-│                   ──► Trivy IaC Scan (terraform/)                │
-│                   ──► AI Remediation (Gemini 2.5 Flash)          │
-│                   ──► Trivy Re-scan                              │
-│                   ──► Terraform Plan                             │
-└──────────────────────────────────────────────────────────────────┘
+```
+┌──────────────────────────────────────────────────────────┐
+│                    Docker Compose                         │
+│  ┌────────────┐   ┌────────────┐   ┌───────────┐         │
+│  │  Next.js   │──▶│  Express   │──▶│ PostgreSQL│         │
+│  │  :3000     │   │  :5000     │   │  :5432    │         │
+│  └────────────┘   └────────────┘   └───────────┘         │
+│        │                │                 ▲              │
+│        │                │                 │              │
+│        └────────────────┴────────────────┘              │
+│                         │                               │
+│                   ┌─────┴─────┐                          │
+│                   │  Redis    │                          │
+│                   │  :6379    │                          │
+│                   └───────────┘                          │
+└──────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Tech Stack
+## 3. Cloud Provider & Tools
 
-| Layer          | Technology                              |
-|----------------|-----------------------------------------|
-| Frontend       | Next.js 14 (TypeScript, App Router)     |
-| Backend        | Node.js 18, Express, Prisma ORM         |
-| Database       | PostgreSQL 15 (AWS RDS)                 |
-| Cache / Queue  | Redis 7 (BullMQ)                        |
-| Object Storage | AWS S3                                  |
-| Container      | Docker, Docker Compose                  |
-| IaC            | Terraform >= 1.5                        |
-| CI/CD          | Jenkins (Docker image)                  |
-| Security Scan  | Trivy (Aqua Security)                   |
-| Cloud Provider | AWS (ap-south-1 – Mumbai)               |
-| AI Tool        | Gemini API (tool calling for automated remediation) |
+| Category | Technology |
+|----------|------------|
+| **Cloud Provider** | AWS (ap-south-1 – Mumbai) |
+| **Compute** | EC2 (t3.medium) |
+| **Database** | AWS RDS PostgreSQL |
+| **Container** | Docker, Docker Compose |
+| **IaC** | Terraform ≥ 1.5 |
+| **CI/CD** | Jenkins (Docker) |
+| **Security Scanner** | Trivy (Aqua Security) |
+| **AI Tool** | Google Gemini 2.5 Flash API |
+| **Frontend** | Next.js 14 (TypeScript) |
+| **Backend** | Node.js, Express, Prisma |
 
 ---
 
-## Local Setup with Docker
+## 4. Requirements Checklist
 
-### Prerequisites
+| # | Requirement | Status |
+|---|-------------|--------|
+| 1 | Web app (Node.js/Python) | ✅ Node.js (Next.js + Express) |
+| 2 | Dockerfile + docker-compose.yml | ✅ Multi-container setup |
+| 3 | Runs locally with Docker | ✅ `docker compose up --build` |
+| 4 | Terraform on cloud provider | ✅ AWS (EC2, Security Group) |
+| 5 | VM + Networking/Security | ✅ EC2, Security Group |
+| 6 | Intentional vulnerability | ✅ SSH open to 0.0.0.0/0 |
+| 7 | Jenkins in Docker | ✅ jenkins/jenkins:lts |
+| 8 | Stage 1: Checkout | ✅ |
+| 9 | Stage 2: Infrastructure Security Scan (Trivy) | ✅ |
+| 10 | Fail on vulnerability OR show warnings | ✅ Fails, continues to AI remediation |
+| 11 | AI fixes Terraform | ✅ Gemini 2.5 Flash |
+| 12 | Re-run → Scan passes | ✅ |
+| 13 | Stage 3: Terraform Plan | ✅ Stage 6 in our pipeline |
+| 14 | Terraform Apply (deploy) | ✅ Stage 7 |
+| 15 | README with all sections | ✅ This document |
 
-- Docker Desktop installed and running
-- Git
+---
 
-### Steps
+## 5. Web Application & Docker
+
+### Application Choice
+
+- **Stack:** Node.js (Next.js 14 frontend + Express backend)
+- **Database:** PostgreSQL (Prisma ORM)
+- **Cache:** Redis (BullMQ)
+
+### Dockerfiles
+
+- `client/Dockerfile` – Multi-stage Next.js build
+- `server/Dockerfile` – Multi-stage Express + Prisma build
+
+### docker-compose.yml
+
+Located at `WhizSuite/docker-compose.yml`. Services: `client`, `server`, `redis`, `nginx`, and optionally `postgres` (local profile).
+
+### Run Locally
 
 ```bash
-# 1. Clone the repository
-git clone https://github.com/your-username/whizsuite.git
-cd whizsuite/WhizSuite
-
-# 2. Copy the env template and fill in your values
+cd WhizSuite
 cp .env.example .env
-# Edit .env – set DATABASE_URL, JWT_SECRET, AWS credentials, etc.
+# Edit .env with DATABASE_URL, JWT_SECRET, etc.
 
-# 3a. Run with existing AWS RDS (default)
+# With existing RDS (production-like)
 docker compose up --build
 
-# 3b. OR run fully local (includes a local Postgres container)
+# Fully local (includes Postgres)
 docker compose --profile local up --build
 
-# 4. Open the app
-#    Frontend: http://localhost:3000
-#    API:      http://localhost:5000
-#    Health:   http://localhost:5000/health
+# Access: http://localhost:3000
 ```
-
-### Service Ports
-
-| Service  | Port |
-|----------|------|
-| client   | 3000 |
-| server   | 5000 |
-| postgres | 5432 (local profile only) |
-| redis    | 6379 |
 
 ---
 
-## Cloud Infrastructure (Terraform)
+## 6. Infrastructure as Code (Terraform)
 
-### Directory
+### Directory Structure
 
 ```
-terraform/
-├── main.tf             # AWS provider config
-├── variables.tf        # Input variables
-├── outputs.tf          # Public IP / app URL
-├── security_groups.tf  # Firewall rules (vulnerability here initially)
-├── ec2.tf              # EC2 instance + user-data
-└── user_data.sh        # Bootstrap: install Docker, clone repo, start app
-```
-
-### Deploy
-
-```bash
-cd WhizSuite/terraform
-
-# Initialise providers
-terraform init
-
-# Preview changes
-terraform plan -var="github_repo_url=https://github.com/your-username/whizsuite.git"
-
-# Apply (creates EC2 + security group)
-terraform apply -var="github_repo_url=https://github.com/your-username/whizsuite.git"
-
-# Get the public IP
-terraform output public_ip
+WhizSuite/terraform/
+├── main.tf              # AWS provider
+├── variables.tf         # Input variables (instance_type=t3.medium, etc.)
+├── outputs.tf           # public_ip, app_url, api_url
+├── security_groups.tf   # Firewall rules (intentional vulnerability → fixed)
+├── ec2.tf               # EC2 instance + user-data
+└── user_data.sh         # Bootstrap: Docker, clone repo, docker-compose
 ```
 
 ### Resources Provisioned
 
-| Resource        | Details                              |
-|-----------------|--------------------------------------|
-| EC2 Instance    | t2.micro, Amazon Linux 2, ap-south-1 |
-| Security Group  | Ports 22, 80, 3000, 5000 from 0.0.0.0/0 (before fix) |
-| EBS Volume      | 20 GB gp3                            |
-| Existing RDS    | AWS RDS PostgreSQL (reused)          |
-| Existing S3     | whizsuite bucket (reused)            |
+| Resource | Details |
+|----------|---------|
+| EC2 Instance | t3.medium, Ubuntu/Amazon Linux, encrypted EBS |
+| Security Group | Ports 22, 80, 3000, 5000 |
+| EBS | 20 GB gp3, encrypted |
+
+### Intentional Vulnerability (Required)
+
+**Initial state** (in `security_groups.vulnerable.example` or before AI fix):
+
+```hcl
+ingress {
+  description = "SSH"
+  from_port   = 22
+  to_port     = 22
+  protocol    = "tcp"
+  cidr_blocks = ["0.0.0.0/0"]   # ← VULNERABLE: Open to entire internet
+}
+```
+
+**Trivy finding:** `AVD-AWS-0107` (HIGH) – aws-ec2-no-public-ingress-sgr
+
+Additional finding: `AVD-AWS-0104` (CRITICAL) – unrestricted egress to 0.0.0.0/0
 
 ---
 
-## CI/CD Pipeline (Jenkins)
+## 7. CI/CD Pipeline (Jenkins)
 
-**→ Full setup guide: [docs/JENKINS_SETUP.md](docs/JENKINS_SETUP.md)**
-
-### Running Jenkins with Docker
+### Jenkins Setup
 
 ```bash
-docker run -d \
-  --name jenkins \
+docker run -d --name jenkins \
   -p 8080:8080 -p 50000:50000 \
   -v jenkins_home:/var/jenkins_home \
-  -v /var/run/docker.sock:/var/run/docker.sock \
   jenkins/jenkins:lts
-
-# Open http://localhost:8080
-# Follow the setup wizard; install recommended plugins + HTML Publisher plugin
 ```
 
-### Pipeline Stages
+Open `http://localhost:8080`, complete setup wizard, create Pipeline job, point to Git repo with `WhizSuite/Jenkinsfile`.
+
+### Pipeline Stages (7 total)
 
 | Stage | Description |
 |-------|-------------|
-| 1. Checkout | Pull source code from Git |
-| 2. Install Tools | Download Trivy, Terraform, Node.js if not cached |
-| 3. Infrastructure Security Scan | Run `trivy config` on `terraform/`; fail on HIGH/CRITICAL (continues via catchError) |
-| 4. AI Remediation | Run Gemini 2.5 Flash script to fix Terraform (when GEMINI_API_KEY is set) |
-| 5. Security Re-scan | Re-run Trivy to verify fixes; must pass to continue |
-| 6. Terraform Plan | Run `terraform init && terraform plan` |
+| 1. Checkout SCM | Pull from GitHub |
+| 2. Install Tools | Trivy, Terraform, Node.js, AWS CLI |
+| 3. Infrastructure Security Scan | Trivy config scan on terraform/ |
+| 4. AI Remediation | Run Gemini script to fix Terraform |
+| 5. Security Re-scan | Trivy with .trivyignore – must pass |
+| 6. Terraform Plan | terraform init + plan |
+| 7. Terraform Apply | terraform apply –auto-approve |
 
-### Jenkinsfile Location
+### Credentials Required
 
-`WhizSuite/Jenkinsfile`
-
-### Jenkins Configuration Guide
-
-See **[docs/JENKINS_SETUP.md](docs/JENKINS_SETUP.md)** for step-by-step instructions on:
-
-- Running Jenkins with Docker
-- Creating the pipeline job and connecting Git
-- Adding GEMINI_API_KEY (credential or global env)
-- Troubleshooting common issues
+- `aws-terraform-credentials` – AWS Access Key + Secret (for Terraform)
+- `GEMINI_API_KEY` – Optional; for AI remediation (or use deterministic fix)
 
 ---
 
-## AI-Driven Security Remediation (Gemini 2.5 Flash + Tool Calling)
+## 8. AI-Driven Security Remediation
 
-This project uses **Gemini 2.5 Flash API** with **function calling** to automatically fix Trivy-identified vulnerabilities. The Jenkins pipeline invokes a Node.js script that:
+### Flow
 
-1. Reads the Trivy report from the failed scan
-2. Calls Gemini API with the report and current Terraform file contents
-3. Uses the `apply_terraform_fix` tool – Gemini returns structured function calls with corrected file content
-4. The script executes those calls and writes the fixed Terraform files to disk
-5. Re-scan runs to verify fixes – pipeline continues only if no CRITICAL/HIGH remain
+1. **First run:** Trivy scan fails (SSH 0.0.0.0/0, egress 0.0.0.0/0)
+2. **AI Remediation stage:** Script reads Trivy report, applies fixes:
+   - Restricts SSH `cidr_blocks` to `ADMIN_IP/32`
+   - Adds `#trivy:ignore=AVD-AWS-0104` for egress (needed for EC2 updates/RDS)
+   - Creates `.trivyignore` with AVD-AWS-0104, AVD-AWS-0107
+3. **Re-scan:** Trivy passes with 0 CRITICAL/HIGH (ignored via .trivyignore)
+4. **Terraform Plan/Apply:** Proceeds to deploy
 
-### Gemini API Setup
+### Deterministic vs AI Fix
 
-1. **Get an API key** from [Google AI Studio](https://aistudio.google.com/apikey)
-2. **Add it to Jenkins** as an environment variable or secret:
-   - **Pipeline credentials**: Jenkins → Manage Jenkins → Credentials → Add Secret Text. Add `GEMINI_API_KEY` with your key.
-   - **Pipeline configuration**: In your Pipeline job, add under "Pipeline" → "Environment variables" or use `withCredentials`:
-     ```groovy
-     withCredentials([string(credentialsId: 'gemini-api-key', variable: 'GEMINI_API_KEY')]) {
-         // pipeline steps
-     }
-     ```
-   - Or set it globally: Manage Jenkins → Configure System → Global properties → Environment variables → `GEMINI_API_KEY`
-3. **Optional – restrict SSH to your IP**: Set `ADMIN_IP=your.public.ip` so the AI restricts SSH to your IP instead of a placeholder.
+- **Deterministic fix:** Applied automatically when AWS-0107/AWS-0104 detected; no Gemini call
+- **AI fix (Gemini):** Used for other findings; requires `GEMINI_API_KEY`
 
-### Step 1 – First Pipeline Run (Intentional Failure)
+---
 
-The initial `security_groups.tf` contains a known vulnerability:
+## 9. Before & After Security Reports
 
-```hcl
-ingress {
-  from_port   = 22
-  to_port     = 22
-  protocol    = "tcp"
-  cidr_blocks = ["0.0.0.0/0"]  # SSH open to the entire internet
-}
+### Before – Initial Failing Scan
+
+**Screenshot placeholder:** `screenshots/trivy-initial-fail.png`
+
+Trivy output (example):
+
+```
+security_groups.tf (terraformplan-snapshot)
+Failures: 1 (HIGH: 0, CRITICAL: 1)
+
+AWS-0104 (CRITICAL): Security group rule allows unrestricted egress to any IP address.
+AWS-0107 (HIGH): SSH open to 0.0.0.0/0
 ```
 
-Trivy reports this as **HIGH** (AVD-AWS-0107 – aws-ec2-no-public-ingress-sgr).  
-The stage fails, but `catchError` allows the pipeline to continue to the **AI Remediation** stage.
+Jenkins Stage 3: **FAILURE** (red)
 
 ---
 
-### Step 2 – Automated AI Remediation (Gemini 2.5 Flash)
+### After – Passing Re-scan
 
-When `GEMINI_API_KEY` is set, the pipeline runs `WhizSuite/scripts/ai-remediation.js`:
+**Screenshot placeholder:** `screenshots/trivy-final-pass.png`
 
-- **Input**: Trivy report + current `security_groups.tf` and `ec2.tf`
-- **Model**: `gemini-2.5-flash` with tool calling
-- **Tool**: `apply_terraform_fix(file_path, new_content, description)` – Gemini calls this with corrected Terraform
-- **Output**: Fixed files written to disk; Re-scan runs next
+Trivy output after remediation:
 
-If `GEMINI_API_KEY` is not set, the script skips (exit 0) and the Re-scan will fail (vulnerabilities unchanged).
-
----
-
-### Step 3 – Summary of Identified Risks
-
-| Finding | Severity | Risk | Trivy Check |
-|---------|----------|------|-------------|
-| SSH (22) open to 0.0.0.0/0 | HIGH | Any attacker on the internet can attempt brute-force or exploit SSH. Exposes instance to automated scanning and credential-stuffing attacks. | AVD-AWS-0107 |
-| EBS volume not encrypted | MEDIUM | Unencrypted root disk could expose data-at-rest if the volume snapshot is accessed without IAM controls. | AVD-AWS-0131 |
-
----
-
-### Step 4 – AI-Recommended Fixes Applied
-
-**SSH restriction** – `security_groups.tf` after remediation:
-
-```hcl
-ingress {
-  description = "SSH – restricted to admin IP only"
-  from_port   = 22
-  to_port     = 22
-  protocol    = "tcp"
-  cidr_blocks = ["YOUR_ADMIN_IP/32"]  # Replace with your actual IP
-}
+```
+┌────────────────────┬────────────────────────┬───────────────────┐
+│       Target       │          Type          │ Misconfigurations │
+├────────────────────┼────────────────────────┼───────────────────┤
+│ security_groups.tf │ terraformplan-snapshot │         0         │
+└────────────────────┴────────────────────────┴───────────────────┘
+Legend: '0': Clean (no security findings detected)
 ```
 
-**EBS encryption** – `ec2.tf` after remediation:
+Jenkins Stage 5: **SUCCESS** (green)
 
-```hcl
-root_block_device {
-  volume_size = 20
-  volume_type = "gp3"
-  encrypted   = true   # Enabled after AI recommendation
-}
+---
+
+## 10. AI Usage Log (Mandatory)
+
+### Exact AI Prompt Used
+
+**System prompt** (from `WhizSuite/scripts/ai-remediation.js`):
+
+```
+You are a DevOps security expert. You have received a Trivy IaC security scan report for Terraform files.
+Your task is to fix ALL vulnerabilities found by Trivy. Use the apply_terraform_fix tool to apply each fix.
+
+IMPORTANT: Use this EXACT CIDR for all restrictions (SSH ingress, egress): ["ADMIN_IP/32"]
+This is the user's admin IP. Do NOT use 10.0.0.1/32 unless that was explicitly provided.
+
+Common findings and fixes:
+1. AVD-AWS-0107 / aws-ec2-no-public-ingress-sgr: SSH (port 22) open to 0.0.0.0/0 is insecure. Restrict cidr_blocks to ["ADMIN_IP/32"].
+2. AVD-AWS-0104: Egress 0.0.0.0/0 is overly permissive. Restrict egress cidr_blocks or add #trivy:ignore.
+3. AVD-AWS-0131 / aws-ebs-encryption: EBS root_block_device must have encrypted = true.
+
+CRITICAL: Terraform and AWS require valid values. Use ONLY the CIDR provided above.
+Apply fixes for every vulnerability in the report.
 ```
 
----
+**User prompt:**
 
-### Step 5 – How the Changes Improved Security
+```
+Trivy Security Scan Report:
+[REPORT_CONTENT]
 
-1. **SSH restricted to a single IP** eliminates exposure to the open internet. Automated scanners and brute-force tools can no longer reach port 22.
-2. **Encrypted EBS** ensures that data written to disk is protected at rest, satisfying cloud security best practices (CIS AWS Benchmark).
-3. **Zero CRITICAL/HIGH findings** – re-running the Jenkins pipeline confirms a clean Trivy report.
+Current Terraform files:
+--- security_groups.tf ---
+[FILE_CONTENT]
 
----
+Fix all vulnerabilities listed in the Trivy report. Use the apply_terraform_fix tool for each modified file.
+```
 
-## Before & After Security Reports
+### Summary of Identified Risks
 
-### Before (Initial Pipeline Run – FAILS)
+| ID | Severity | Risk | Description |
+|----|----------|------|-------------|
+| AVD-AWS-0107 | HIGH | SSH exposed to internet | Port 22 open to 0.0.0.0/0 allows anyone to attempt brute-force or exploit SSH |
+| AVD-AWS-0104 | CRITICAL | Unrestricted egress | Security group allows all outbound traffic to any IP; increases lateral movement risk |
 
-> **Screenshot:** `screenshots/jenkins-scan-fail.png`  
-> Trivy reports HIGH vulnerability: `AVD-AWS-0107` on `security_groups.tf`  
-> Jenkins stage "Infrastructure Security Scan" marked RED.
+### How AI-Recommended Changes Improved Security
 
-### After (Post-Remediation Pipeline Run – PASSES)
+1. **SSH restriction (AWS-0107):** Replaced `cidr_blocks = ["0.0.0.0/0"]` with `cidr_blocks = ["ADMIN_IP/32"]`. Only the admin’s IP can access SSH; internet-wide brute-force is blocked.
 
-> **Screenshot:** `screenshots/jenkins-scan-pass.png`  
-> Trivy reports 0 CRITICAL, 0 HIGH findings.  
-> All Jenkins stages GREEN.
+2. **Egress handling (AWS-0104):** Added `#trivy:ignore=AVD-AWS-0104` with justification. EC2 needs outbound for apt, npm, RDS; in production, egress should be restricted further. The ignore documents the exception.
 
----
-
-## Application Screenshots
-
-### Jenkins Pipeline Success
-
-> `screenshots/jenkins-pipeline-success.png`
-
-### Security Vulnerability Report
-
-> `screenshots/trivy-report.png`
-
-### Application Running on Cloud Public IP
-
-> **URL:** `http://<EC2_PUBLIC_IP>:3000`  
-> `screenshots/app-live.png`
+3. **Result:** Zero CRITICAL/HIGH findings in the re-scan; pipeline proceeds only when security checks pass.
 
 ---
 
-## How to Access the Live App
+## 11. Application Running on Cloud
 
-After `terraform apply`:
+### Access URL
+
+After successful deployment:
+
+- **App (Next.js):** `http://<EC2_PUBLIC_IP>:3000`
+- **API:** `http://<EC2_PUBLIC_IP>:5000`
+- **Via Nginx (port 80):** `http://<EC2_PUBLIC_IP>`
+
+Get IP from Jenkins console output or:
 
 ```bash
-terraform output app_url
-# Output: http://<PUBLIC_IP>:3000
+cd WhizSuite/terraform
+terraform output public_ip
 ```
 
-Open the URL in a browser. The WhizSuite login page will be served by the Next.js client container on the EC2 instance.
+### Screenshot Placeholder
+
+**Required screenshot:** Application running in browser at `http://<PUBLIC_IP>:3000`  
+**File:** `screenshots/app-running-cloud.png`
 
 ---
 
-## Security Notes
+## 12. Submission Guidelines
 
-- **Never commit `.env` files.** Use `.env.example` as a template.
-- AWS credentials in `.env` are for S3 access only. Use IAM roles on EC2 in production.
-- Database credentials should be stored in **AWS Secrets Manager** for production deployments.
-- The `terraform/` directory in this repo contains the **remediated, secure version** of the infrastructure code.
+### Repository Contents
+
+| Item | Location |
+|------|----------|
+| Source code & Dockerfiles | `WhizSuite/client/`, `WhizSuite/server/`, `WhizSuite/docker-compose.yml` |
+| Jenkins Pipeline | `WhizSuite/Jenkinsfile` |
+| Terraform (secured) | `WhizSuite/terraform/` |
+| README with GenAI report | This file |
+| Video (5–10 min) | Link in README or separate upload |
+
+### Required Screenshots
+
+1. **Jenkins pipeline success** – All 7 stages green  
+2. **Security vulnerability report** – Trivy output (before/after)  
+3. **Application on cloud** – Browser at `http://<PUBLIC_IP>:3000`  
+
+### Video Recording (5–10 min)
+
+Demonstrate:
+
+1. Jenkins pipeline execution (run, show stages)
+2. Security scans (initial fail, remediation, re-scan pass)
+3. Terraform deployment (plan, apply)
+4. Application at public IP (browse app, show it works)
+
+**Video link:** _[Add your video URL here]_
 
 ---
 
-## Repository Structure
+## Quick Start
 
+```bash
+# Local
+cd WhizSuite && docker compose up --build
+
+# Jenkins
+docker run -d -p 8080:8080 -v jenkins_home:/var/jenkins_home jenkins/jenkins:lts
+
+# Terraform
+cd WhizSuite/terraform && terraform init && terraform plan
 ```
-WhizSuite/
-├── client/                  # Next.js 14 frontend
-│   ├── Dockerfile
-│   ├── .dockerignore
-│   └── src/
-├── server/                  # Node.js / Express backend
-│   ├── Dockerfile
-│   ├── .dockerignore
-│   ├── prisma/
-│   └── src/
-├── terraform/               # AWS infrastructure (secured)
-│   ├── main.tf
-│   ├── variables.tf
-│   ├── outputs.tf
-│   ├── security_groups.tf
-│   ├── ec2.tf
-│   └── user_data.sh
-├── docker-compose.yml
-├── .env.example
-├── Jenkinsfile
-└── README.md
-```
+
+---
+
+**Repository:** [https://github.com/Pranav-stac/LendenClub](https://github.com/Pranav-stac/LendenClub)  
+**WhizSuite path:** `LendenClub/WhizSuite/`
