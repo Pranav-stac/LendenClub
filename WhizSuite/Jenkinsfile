@@ -4,6 +4,7 @@ pipeline {
     parameters {
         string(name: 'GITHUB_REPO_URL', defaultValue: 'https://github.com/Pranav-stac/LendenClub', description: 'Git repo URL for EC2 to clone (must contain WhizSuite/)')
         string(name: 'ADMIN_IP', defaultValue: '10.0.0.1/32', description: 'Your public IP for SSH (e.g. 203.0.113.50) – will use YOUR_IP/32. Get from https://whatismyip.com')
+        string(name: 'TF_STATE_BUCKET', defaultValue: 'lendenclub-whizsuite-tfstate', description: 'S3 bucket for Terraform state (create first: aws s3 mb s3://BUCKET --region ap-south-1)')
     }
 
     environment {
@@ -26,14 +27,23 @@ pipeline {
         // ─────────────────────────────────────────────────────────
         // STAGE 1 – Checkout
         // ─────────────────────────────────────────────────────────
-        stage('Checkout') {
+        stage('1. Checkout SCM') {
             steps {
-                echo '========== STAGE 1: Checkout =========='
+                script {
+                    echo """
+╔══════════════════════════════════════════════════════════════════════╗
+║  STAGE 1 of 7: CHECKOUT SOURCE CODE                                 ║
+║  ─────────────────────────────────────────────────────────────────  ║
+║  Pulling latest code from Git repository                             ║
+║  Target: ${params.GITHUB_REPO_URL}                                   ║
+╚══════════════════════════════════════════════════════════════════════╝
+                    """
+                }
                 checkout scm
                 script {
                     if (isUnix()) {
-                        sh 'echo "Repository cloned successfully"'
-                        sh 'ls -la'
+                        sh 'echo "" && echo "  ► Repository structure:" && ls -la'
+                        sh 'echo "" && echo "  ✓ Stage 1 complete: Source code checked out"'
                     } else {
                         bat 'echo Repository cloned successfully'
                         bat 'dir /b'
@@ -46,9 +56,15 @@ pipeline {
         // STAGE 2 – Install Tooling (Trivy + Terraform + Node)
         // Uses $WORKSPACE/.tools (user-writable) – Jenkins runs non-root
         // ─────────────────────────────────────────────────────────
-        stage('Install Tools') {
+        stage('2. Install Tools') {
             steps {
-                echo '========== STAGE 2: Installing Trivy & Terraform =========='
+                echo """
+╔══════════════════════════════════════════════════════════════════════╗
+║  STAGE 2 of 7: INSTALL TOOLS                                        ║
+║  ─────────────────────────────────────────────────────────────────  ║
+║  Trivy ${env.TRIVY_VERSION} • Terraform ${env.TF_VERSION} • Node.js 20║
+╚══════════════════════════════════════════════════════════════════════╝
+                """
                 script {
                     if (isUnix()) {
                         sh '''
@@ -92,7 +108,8 @@ pipeline {
                                 echo "Node.js already installed: $(node --version)"
                             fi
 
-                            echo "Tools in $TOOLS_DIR:" && ls -la "$TOOLS_DIR"
+                            echo "" && echo "  ► Installed tools:" && ls -la "$TOOLS_DIR"
+                            echo "" && echo "  ✓ Stage 2 complete: Trivy, Terraform, Node.js ready"
                         '''
                     } else {
                         // Windows: download Trivy, Terraform, Node to workspace .tools dir
@@ -364,8 +381,11 @@ pipeline {
                             dir("${TERRAFORM_DIR}") {
                                 if (isUnix()) {
                                     sh """
-                                        echo "Initialising Terraform..."
-                                        terraform init -input=false
+                                        echo "Initialising Terraform (S3 backend: ${params.TF_STATE_BUCKET})..."
+                                        terraform init -input=false -reconfigure \\
+                                            -backend-config="bucket=${params.TF_STATE_BUCKET}" \\
+                                            -backend-config="key=whizsuite/terraform.tfstate" \\
+                                            -backend-config="region=ap-south-1"
                                         echo ""
                                         echo "Running Terraform plan..."
                                         terraform plan -input=false -out=tfplan \
@@ -379,8 +399,8 @@ pipeline {
                                 } else {
                                     powershell """
                                         \$env:PATH = \"\$env:WORKSPACE\\.tools;\$env:PATH\"
-                                        Write-Host "Initialising Terraform..."
-                                        terraform init -input=false
+                                        Write-Host "Initialising Terraform (S3 backend: ${params.TF_STATE_BUCKET})..."
+                                        terraform init -input=false -backend-config="bucket=${params.TF_STATE_BUCKET}" -backend-config="key=whizsuite/terraform.tfstate" -backend-config="region=ap-south-1"
                                         Write-Host ""
                                         Write-Host "Running Terraform plan..."
                                         terraform plan -input=false -out=tfplan -var=\"aws_region=ap-south-1\" -var=\"github_repo_url=${params.GITHUB_REPO_URL}\" -var=\"admin_ip=${params.ADMIN_IP?.contains('/') ? params.ADMIN_IP : params.ADMIN_IP + '/32'}\" -var=\"admin_ip=${params.ADMIN_IP?.contains('/') ? params.ADMIN_IP : params.ADMIN_IP + '/32'}\"
@@ -403,22 +423,25 @@ pipeline {
                         echo 'Running terraform validate instead of plan (no AWS needed).'
                         echo 'To run full plan: add credential in Jenkins (Step 5 of JENKINS_SETUP.md).'
                         echo ''
-                        dir("${TERRAFORM_DIR}") {
-                            if (isUnix()) {
-                                sh '''
-                                    terraform init -input=false
+                            dir("${TERRAFORM_DIR}") {
+                                if (isUnix()) {
+                                    sh """
+                                    terraform init -input=false -reconfigure \\
+                                        -backend-config="bucket=${params.TF_STATE_BUCKET}" \\
+                                        -backend-config="key=whizsuite/terraform.tfstate" \\
+                                        -backend-config="region=ap-south-1"
                                     terraform validate
                                     echo ""
                                     echo "Terraform config is valid. Add aws-terraform-credentials for full plan."
-                                '''
+                                """
                             } else {
-                                powershell '''
-                                    $env:PATH = "$env:WORKSPACE\\.tools;$env:PATH"
-                                    terraform init -input=false
+                                powershell """
+                                    \$env:PATH = "\$env:WORKSPACE\\.tools;\$env:PATH"
+                                    terraform init -input=false -reconfigure -backend-config="bucket=${params.TF_STATE_BUCKET}" -backend-config="key=whizsuite/terraform.tfstate" -backend-config="region=ap-south-1"
                                     terraform validate
                                     Write-Host ""
                                     Write-Host "Terraform config is valid. Add aws-terraform-credentials for full plan."
-                                '''
+                                """
                             }
                         }
                     }
