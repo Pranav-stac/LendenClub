@@ -7,13 +7,13 @@ resource "aws_security_group" "whizsuite_sg" {
   name        = "${var.app_name}-sg"
   description = "Security group for WhizSuite application server"
 
-  # SSH restricted (Trivy AWS-0107) - 10.0.0.1/32 for VPC-only; change for public SSH
+  # SSH restricted (Trivy AWS-0107) - pass admin_ip var for your public IP
   ingress {
     description = "SSH restricted"
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["10.0.0.1/32"]
+    cidr_blocks = ["${var.admin_ip}"]
   }
 
   # HTTP access for Next.js client

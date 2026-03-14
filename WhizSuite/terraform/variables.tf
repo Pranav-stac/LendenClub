@@ -54,3 +54,9 @@ variable "frontend_url" {
   type        = string
   default     = "http://localhost:3000"
 }
+
+variable "admin_ip" {
+  description = "Your public IP for SSH access in CIDR form (e.g. 1.2.3.4/32). Get from https://whatismyip.com"
+  type        = string
+  default     = "10.0.0.1/32"  # VPC-only; set your IP for SSH from internet
+}

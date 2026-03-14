@@ -3,6 +3,7 @@ pipeline {
 
     parameters {
         string(name: 'GITHUB_REPO_URL', defaultValue: 'https://github.com/Pranav-stac/LendenClub', description: 'Git repo URL for EC2 to clone (must contain WhizSuite/)')
+        string(name: 'ADMIN_IP', defaultValue: '10.0.0.1/32', description: 'Your public IP for SSH (e.g. 203.0.113.50) – will use YOUR_IP/32. Get from https://whatismyip.com')
     }
 
     environment {
@@ -331,7 +332,9 @@ pipeline {
                                         echo "Running Terraform plan..."
                                         terraform plan -input=false -out=tfplan \
                                             -var="aws_region=ap-south-1" \
-                                            -var="github_repo_url=${params.GITHUB_REPO_URL}"
+                                            -var="github_repo_url=${params.GITHUB_REPO_URL}" \
+                                            -var="admin_ip=${params.ADMIN_IP?.contains('/') ? params.ADMIN_IP : params.ADMIN_IP + '/32'}" \
+                                            -var="admin_ip=${params.ADMIN_IP?.contains('/') ? params.ADMIN_IP : params.ADMIN_IP + '/32'}"
                                         echo ""
                                         echo "Terraform plan complete. Review output above before applying."
                                     """
@@ -342,7 +345,7 @@ pipeline {
                                         terraform init -input=false
                                         Write-Host ""
                                         Write-Host "Running Terraform plan..."
-                                        terraform plan -input=false -out=tfplan -var=\"aws_region=ap-south-1\" -var=\"github_repo_url=${params.GITHUB_REPO_URL}\"
+                                        terraform plan -input=false -out=tfplan -var=\"aws_region=ap-south-1\" -var=\"github_repo_url=${params.GITHUB_REPO_URL}\" -var=\"admin_ip=${params.ADMIN_IP?.contains('/') ? params.ADMIN_IP : params.ADMIN_IP + '/32'}\" -var=\"admin_ip=${params.ADMIN_IP?.contains('/') ? params.ADMIN_IP : params.ADMIN_IP + '/32'}\"
                                         Write-Host ""
                                         Write-Host "Terraform plan complete. Review output above before applying."
                                     """
