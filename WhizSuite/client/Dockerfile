@@ -24,6 +24,9 @@ COPY . .
 ARG NEXT_PUBLIC_API_URL=http://localhost:5000/api
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 
+# Reduce OOM risk during Next.js build (increase if build still fails)
+ENV NODE_OPTIONS="--max-old-space-size=1024"
+
 RUN npm run build
 
 # ============================================================
