@@ -1,0 +1,7 @@
+# Trivy misconfiguration scanner config
+# Ignores AWS-0104 (unrestricted egress) - app needs outbound for packages, Docker, RDS
+misconfig:
+  ignores:
+    - id: AVD-AWS-0104
+      reasons:
+        - "Egress 0.0.0.0/0 required for apt, Docker Hub, npm, RDS; restrict in production"

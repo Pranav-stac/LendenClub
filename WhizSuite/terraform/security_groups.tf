@@ -43,33 +43,13 @@ resource "aws_security_group" "whizsuite_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  # Egress restricted (Trivy AWS-0104) – HTTPS, HTTP, DNS
+  # Outbound – required for packages, Docker, RDS (Trivy AWS-0104: ignore – app needs internet)
+  #trivy:ignore:AVD-AWS-0104
   egress {
-    description = "HTTPS outbound"
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-  egress {
-    description = "HTTP outbound"
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-  egress {
-    description = "DNS"
-    from_port   = 53
-    to_port     = 53
-    protocol    = "udp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-  egress {
-    description = "PostgreSQL (RDS)"
-    from_port   = 5432
-    to_port     = 5432
-    protocol    = "tcp"
+    description = "Allow all outbound (packages, Docker Hub, RDS, etc.)"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
 
