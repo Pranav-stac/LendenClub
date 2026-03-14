@@ -285,15 +285,17 @@ pipeline {
                     if (isUnix()) {
                         sh '''
                             echo "Re-running Trivy to verify AI fixes..."
+                            TRIVY_TARGET="${WORKSPACE}/WhizSuite/terraform"
+                            echo "Scanning: $TRIVY_TARGET"
                             trivy config \
                                 --severity HIGH,CRITICAL \
                                 --format table \
-                                ${TERRAFORM_DIR}
+                                "$TRIVY_TARGET"
 
                             trivy config \
                                 --severity HIGH,CRITICAL \
                                 --exit-code 1 \
-                                ${TERRAFORM_DIR}
+                                "$TRIVY_TARGET"
                         '''
                     } else {
                         powershell '''

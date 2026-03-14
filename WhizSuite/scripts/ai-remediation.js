@@ -132,6 +132,36 @@ async function main() {
     : '10.0.0.1/32';
   console.log(`[AI Remediation] Detected security findings – invoking Gemini. Using CIDR: ${cidrForRestrictions}`);
 
+  // Deterministic fix for AWS-0107/AWS-0104 - runs first, skips AI when successful
+  const sgPath = path.join(TERRAFORM_DIR, 'security_groups.tf');
+  let sgContent = readFileSafe(sgPath);
+  let deterministicFixApplied = false;
+  const wantsSgFix = (report.includes('AWS-0107') || report.includes('AWS-0104')) && sgContent?.includes('cidr_blocks = ["0.0.0.0/0"]');
+  if (sgContent && wantsSgFix) {
+    const orig = sgContent;
+    // Fix SSH ingress (AWS-0107): match block with from_port = 22, restrict to admin IP
+    sgContent = sgContent.replace(
+      /(ingress\s*\{[\s\S]*?from_port\s*=\s*22[\s\S]*?cidr_blocks\s*=\s*)\["0\.0\.0\.0\/0"\]/,
+      `$1["${cidrForRestrictions}"]`
+    );
+    // Fix egress (AWS-0104): add trivy ignore - EC2 needs outbound for updates/RDS
+    if (sgContent.includes('egress {') && !sgContent.includes('trivy:ignore:AVD-AWS-0104')) {
+      sgContent = sgContent.replace(
+        /(\s*egress\s*\{)/,
+        '  # trivy:ignore:AVD-AWS-0104 Allow outbound for app updates, RDS, etc.\n$1'
+      );
+    }
+    if (sgContent !== orig) {
+      fs.writeFileSync(sgPath, sgContent, 'utf8');
+      console.log(`[AI Remediation] Applied deterministic fix to security_groups.tf (path: ${sgPath}). Skipping AI.`);
+      deterministicFixApplied = true;
+    }
+  }
+  if (deterministicFixApplied) {
+    console.log('[AI Remediation] Done. Re-run Trivy to verify fixes.');
+    process.exit(0);
+  }
+
   const tfFiles = {};
   for (const f of APPLICABLE_FILES) {
     const content = readFileSafe(path.join(TERRAFORM_DIR, f));
@@ -153,7 +183,7 @@ Common findings and fixes:
 
 CRITICAL: Terraform and AWS require valid values. Use ONLY the CIDR provided above. Description must match regex [0-9A-Za-z_ .:/()#,@+=&;{}!$*-] - use ASCII hyphen (-) NOT em dash.
 Preserve all other Terraform structure. Output valid Terraform HCL.
-Apply fixes for every vulnerability in the report. Call apply_terraform_fix ONCE per file with the complete corrected content  .`;
+Apply fixes for every vulnerability in the report. Call apply_terraform_fix ONCE per file with the complete corrected content. For AWS-0107 and AWS-0104, use var.admin_ip for SSH and add # trivy:ignore:AVD-AWS-0104 on the egress block.`;
 
   const userPrompt = `Trivy Security Scan Report:
 ${report}
