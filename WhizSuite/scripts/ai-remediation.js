@@ -23,11 +23,11 @@ import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const ADMIN_IP = process.env.ADMIN_IP || 'YOUR_ADMIN_IP';
-// Jenkins sets WORKSPACE_ROOT; fallback to WORKSPACE or cwd
+const ADMIN_IP = process.env.ADMIN_IP || '10.0.0.1/32';
+// Prefer absolute paths from Jenkins; fallback to workspace-relative resolution
 const WORKSPACE_ROOT = process.env.WORKSPACE_ROOT || process.env.WORKSPACE || process.cwd();
 const REPORT_FILE = process.env.REPORT_FILE_ABS || path.resolve(WORKSPACE_ROOT, process.env.REPORT_FILE || 'trivy-report.txt');
-const TERRAFORM_DIR = path.resolve(WORKSPACE_ROOT, process.env.TERRAFORM_DIR || 'WhizSuite/terraform');
+const TERRAFORM_DIR = process.env.TERRAFORM_DIR_ABS || path.resolve(WORKSPACE_ROOT, process.env.TERRAFORM_DIR || 'WhizSuite/terraform');
 
 const APPLICABLE_FILES = ['security_groups.tf', 'ec2.tf'];
 
@@ -62,11 +62,17 @@ function readFileSafe(p) {
   }
 }
 
-function applyTerraformFix(args) {
+function applyTerraformFix(args, cidrForRestrictions) {
   const { file_path, new_content, description } = args;
   const fullPath = path.join(TERRAFORM_DIR, file_path);
   if (!APPLICABLE_FILES.includes(file_path)) {
     return { success: false, error: `Invalid file: ${file_path}. Allowed: ${APPLICABLE_FILES.join(', ')}` };
+  }
+  if (new_content.includes('cidr_blocks = ["0.0.0.0/0"]')) {
+    return {
+      success: false,
+      error: `Fix still contains 0.0.0.0/0. You MUST use cidr_blocks = ["${cidrForRestrictions}"] for SSH ingress and egress. Never use 0.0.0.0/0.`,
+    };
   }
   try {
     fs.writeFileSync(fullPath, new_content, 'utf8');
@@ -103,7 +109,10 @@ async function main() {
     console.log('[AI Remediation] Trivy report shows 0 findings – skipping (no fixes needed).');
     process.exit(0);
   }
-  console.log('[AI Remediation] Detected security findings – invoking Gemini for fixes.');
+  const cidrForRestrictions = (ADMIN_IP && ADMIN_IP !== 'YOUR_ADMIN_IP' && !ADMIN_IP.startsWith('10.0.0.1'))
+    ? (ADMIN_IP.includes('/') ? ADMIN_IP : `${ADMIN_IP}/32`)
+    : '10.0.0.1/32';
+  console.log(`[AI Remediation] Detected security findings – invoking Gemini. Using CIDR: ${cidrForRestrictions}`);
 
   const tfFiles = {};
   for (const f of APPLICABLE_FILES) {
@@ -116,13 +125,17 @@ async function main() {
   const systemPrompt = `You are a DevOps security expert. You have received a Trivy IaC security scan report for Terraform files.
 Your task is to fix ALL vulnerabilities found by Trivy. Use the apply_terraform_fix tool to apply each fix.
 
-Common findings and fixes:
-1. AVD-AWS-0107 / aws-ec2-no-public-ingress-sgr: SSH (port 22) open to 0.0.0.0/0 is insecure. Restrict cidr_blocks to a valid CIDR. Use ["10.0.0.1/32"] if ADMIN_IP not set - NEVER use literal "ADMIN_IP/32" or "YOUR_ADMIN_IP/32" (invalid).
-2. AVD-AWS-0131 / aws-ebs-encryption: EBS root_block_device must have encrypted = true. Add encrypted = true to root_block_device.
+IMPORTANT: Use this EXACT CIDR for all restrictions (SSH ingress, egress): ["${cidrForRestrictions}"]
+This is the user's admin IP. Do NOT use 10.0.0.1/32 unless that was explicitly provided.
 
-CRITICAL: Terraform and AWS require valid values. Use ONLY valid CIDR (e.g. 10.0.0.1/32), and description must match regex [0-9A-Za-z_ .:/()#,@+=&;{}!$*-] - use ASCII hyphen (-) NOT em dash.
+Common findings and fixes:
+1. AVD-AWS-0107 / aws-ec2-no-public-ingress-sgr: SSH (port 22) open to 0.0.0.0/0 is insecure. Restrict cidr_blocks to ["${cidrForRestrictions}"].
+2. AVD-AWS-0104: Egress 0.0.0.0/0 is overly permissive. Restrict egress cidr_blocks to ["${cidrForRestrictions}"].
+3. AVD-AWS-0131 / aws-ebs-encryption: EBS root_block_device must have encrypted = true. Add encrypted = true to root_block_device.
+
+CRITICAL: Terraform and AWS require valid values. Use ONLY the CIDR provided above. Description must match regex [0-9A-Za-z_ .:/()#,@+=&;{}!$*-] - use ASCII hyphen (-) NOT em dash.
 Preserve all other Terraform structure. Output valid Terraform HCL.
-Apply fixes for every vulnerability in the report. Call apply_terraform_fix for each file that needs changes.`;
+Apply fixes for every vulnerability in the report. Call apply_terraform_fix ONCE per file with the complete corrected content.`;
 
   const userPrompt = `Trivy Security Scan Report:
 ${report}
@@ -171,7 +184,7 @@ Fix all vulnerabilities listed in the Trivy report. Use the apply_terraform_fix 
       break;
     }
 
-    const result = applyTerraformFix(fc.args);
+    const result = applyTerraformFix(fc.args, cidrForRestrictions);
     contents.push(
       { role: 'model', parts: [{ functionCall: { name: fc.name, args: fc.args } }] },
       {
@@ -179,6 +192,11 @@ Fix all vulnerabilities listed in the Trivy report. Use the apply_terraform_fix 
         parts: [{ functionResponse: { name: fc.name, response: result } }],
       }
     );
+    if (result.success) {
+      const updated = readFileSafe(path.join(TERRAFORM_DIR, fc.args.file_path));
+      if (updated) tfFiles[fc.args.file_path] = updated;
+      break;
+    }
   }
 
   console.log('[AI Remediation] Done. Re-run Trivy to verify fixes.');
