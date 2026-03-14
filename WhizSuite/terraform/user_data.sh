@@ -55,8 +55,10 @@ cd whizsuite/WhizSuite
 
 # ─────────────────────────────────────────────
 # 3. Create .env from Terraform variables
+# (IMDSv2 required - instance has http_tokens=required)
 # ─────────────────────────────────────────────
-PUBLIC_IP=$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4)
+TOKEN=$(curl -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600" -s)
+PUBLIC_IP=$(curl -H "X-aws-ec2-metadata-token: $TOKEN" -s http://169.254.169.254/latest/meta-data/public-ipv4)
 
 cat > .env <<EOF
 NODE_ENV=production
