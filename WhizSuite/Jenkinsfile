@@ -269,12 +269,32 @@ pipeline {
                             }
                         }
                     }
+                    // Re-scan in SAME stage to verify fixes (avoids workspace isolation)
+                    script {
+                        if (isUnix()) {
+                            sh '''
+                                echo "Verifying fixes (security_groups.tf excerpt):"
+                                head -65 "${TERRAFORM_DIR_ABS}/security_groups.tf" || true
+                                echo ""
+                                echo "Re-running Trivy to verify fixes..."
+                                trivy config --severity HIGH,CRITICAL --format table "${TERRAFORM_DIR_ABS}"
+                                trivy config --severity HIGH,CRITICAL --exit-code 1 "${TERRAFORM_DIR_ABS}"
+                            '''
+                        } else {
+                            powershell '''
+                                Write-Host "Verifying fixes..."
+                                Get-Content "$env:TERRAFORM_DIR_ABS\\security_groups.tf" -TotalCount 65
+                                trivy config --severity HIGH,CRITICAL --format table $env:TERRAFORM_DIR_ABS
+                                trivy config --severity HIGH,CRITICAL --exit-code 1 $env:TERRAFORM_DIR_ABS
+                            '''
+                        }
+                    }
                 }
             }
         }
 
         // ─────────────────────────────────────────────────────────
-        // STAGE 5 – Security Re-scan (Verify Fixes)
+        // STAGE 5 – Security Re-scan (Verify Fixes) – kept for explicit visibility; verification now in Stage 4
         //
         // Re-runs Trivy after AI remediation. Must pass to continue.
         // ─────────────────────────────────────────────────────────

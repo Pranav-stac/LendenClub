@@ -145,10 +145,11 @@ async function main() {
       `$1["${cidrForRestrictions}"]`
     );
     // Fix egress (AWS-0104): add trivy ignore - EC2 needs outbound for updates/RDS
-    if (sgContent.includes('egress {') && !sgContent.includes('trivy:ignore:AVD-AWS-0104')) {
+    // Correct syntax: #trivy:ignore=AVD-AWS-0104 (must be immediately before the block)
+    if (sgContent.includes('egress {') && !sgContent.includes('trivy:ignore=AVD-AWS-0104')) {
       sgContent = sgContent.replace(
         /(\s*egress\s*\{)/,
-        '  # trivy:ignore:AVD-AWS-0104 Allow outbound for app updates, RDS, etc.\n$1'
+        '  #trivy:ignore=AVD-AWS-0104\n$1'
       );
     }
     if (sgContent !== orig) {
