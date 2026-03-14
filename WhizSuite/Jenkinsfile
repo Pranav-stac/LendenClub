@@ -165,9 +165,16 @@ pipeline {
         // AFTER AI REMEDIATION → Re-run; scan should pass with 0
         //              CRITICAL/HIGH findings.
         // ─────────────────────────────────────────────────────────
-        stage('Infrastructure Security Scan') {
+        stage('3. Infrastructure Security Scan') {
             steps {
-                echo '========== STAGE 3: Trivy IaC Security Scan =========='
+                echo """
+╔══════════════════════════════════════════════════════════════════════╗
+║  STAGE 3 of 7: INFRASTRUCTURE SECURITY SCAN (Trivy IaC)             ║
+║  ─────────────────────────────────────────────────────────────────  ║
+║  Scanning Terraform for misconfigurations • Severity: HIGH, CRITICAL ║
+║  Target: ${env.TERRAFORM_DIR}                                            ║
+╚══════════════════════════════════════════════════════════════════════╝
+                """
                 script {
                     if (isUnix()) {
                         // Generate table report for console
@@ -259,7 +266,7 @@ pipeline {
         // Trivy report and apply fixes to Terraform via tool calling.
         // Skips gracefully if GEMINI_API_KEY is not configured.
         // ─────────────────────────────────────────────────────────
-        stage('AI Remediation') {
+        stage('4. AI Remediation') {
             environment {
                 WORKSPACE_ROOT     = "${env.WORKSPACE}"
                 REPORT_FILE_ABS   = "${env.WORKSPACE}/trivy-report.txt"
@@ -268,7 +275,13 @@ pipeline {
                 ADMIN_IP          = "${params.ADMIN_IP?.contains('/') ? params.ADMIN_IP : params.ADMIN_IP + '/32'}"
             }
             steps {
-                echo '========== STAGE 4: AI Remediation (Gemini 2.5 Flash) =========='
+                echo """
+╔══════════════════════════════════════════════════════════════════════╗
+║  STAGE 4 of 7: AI REMEDIATION (Gemini 2.5 Flash)                    ║
+║  ─────────────────────────────────────────────────────────────────  ║
+║  Analyzing Trivy report • Applying fixes via AI • Re-scan verify    ║
+╚══════════════════════════════════════════════════════════════════════╝
+                """
                 withCredentials([string(credentialsId: 'gemini-api-key', variable: 'GEMINI_API_KEY')]) {
                     dir('WhizSuite/scripts') {
                         script {
@@ -324,9 +337,15 @@ pipeline {
         //
         // Re-runs Trivy after AI remediation. Must pass to continue.
         // ─────────────────────────────────────────────────────────
-        stage('Security Re-scan') {
+        stage('5. Security Re-scan') {
             steps {
-                echo '========== STAGE 5: Trivy Re-scan (Verify Fixes) =========='
+                echo """
+╔══════════════════════════════════════════════════════════════════════╗
+║  STAGE 5 of 7: SECURITY RE-SCAN (Verify AI Fixes)                   ║
+║  ─────────────────────────────────────────────────────────────────  ║
+║  Re-running Trivy with .trivyignore • Must pass to continue         ║
+╚══════════════════════════════════════════════════════════════════════╝
+                """
                 script {
                     if (isUnix()) {
                         sh '''
@@ -365,9 +384,15 @@ pipeline {
         // With aws-terraform-credentials: runs terraform plan
         // Without credentials: runs terraform validate (no AWS, pipeline still passes)
         // ─────────────────────────────────────────────────────────
-        stage('Terraform Plan') {
+        stage('6. Terraform Plan') {
             steps {
-                echo '========== STAGE 6: Terraform Plan =========='
+                echo """
+╔══════════════════════════════════════════════════════════════════════╗
+║  STAGE 6 of 7: TERRAFORM PLAN                                       ║
+║  ─────────────────────────────────────────────────────────────────  ║
+║  Initializing (S3: ${params.TF_STATE_BUCKET}) • Planning infrastructure ║
+╚══════════════════════════════════════════════════════════════════════╝
+                """
                 script {
                     def credError = null
                     try {
@@ -460,9 +485,15 @@ pipeline {
         // Deploys EC2 + security group to AWS when plan succeeded with credentials.
         // EC2 user-data clones repo and runs docker-compose – app goes live.
         // ─────────────────────────────────────────────────────────
-        stage('Terraform Apply') {
+        stage('7. Terraform Apply') {
             steps {
-                echo '========== STAGE 7: Terraform Apply (Automatic Deployment) =========='
+                echo """
+╔══════════════════════════════════════════════════════════════════════╗
+║  STAGE 7 of 7: TERRAFORM APPLY (AWS Deployment)                     ║
+║  ─────────────────────────────────────────────────────────────────  ║
+║  Deploying EC2 + Security Group • App available at http://\${PUBLIC_IP} ║
+╚══════════════════════════════════════════════════════════════════════╝
+                """
                 script {
                     def applyCredError = null
                     try {
