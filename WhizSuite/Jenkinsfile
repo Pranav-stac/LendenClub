@@ -86,7 +86,7 @@ pipeline {
                     } else {
                         // Windows: download Trivy, Terraform, Node to workspace .tools dir
                         powershell '''
-                            $toolsDir = "$env:WORKSPACE\.tools"
+                            $toolsDir = "$env:WORKSPACE\\.tools"
                             New-Item -ItemType Directory -Force -Path $toolsDir | Out-Null
                             $env:PATH = "$toolsDir;$env:PATH"
 
@@ -94,9 +94,9 @@ pipeline {
                             if (-not (Get-Command trivy -ErrorAction SilentlyContinue)) {
                                 Write-Host "Installing Trivy $env:TRIVY_VERSION..."
                                 $url = "https://github.com/aquasecurity/trivy/releases/download/v$env:TRIVY_VERSION/trivy_$env:TRIVY_VERSION`_Windows-64bit.zip"
-                                Invoke-WebRequest -Uri $url -OutFile "$toolsDir\trivy.zip" -UseBasicParsing
-                                Expand-Archive -Path "$toolsDir\trivy.zip" -DestinationPath $toolsDir -Force
-                                Remove-Item "$toolsDir\trivy.zip" -Force
+                                Invoke-WebRequest -Uri $url -OutFile "$toolsDir\\trivy.zip" -UseBasicParsing
+                                Expand-Archive -Path "$toolsDir\\trivy.zip" -DestinationPath $toolsDir -Force
+                                Remove-Item "$toolsDir\\trivy.zip" -Force
                             }
                             Write-Host "Trivy: $(trivy --version 2>$null)"
 
@@ -104,20 +104,20 @@ pipeline {
                             if (-not (Get-Command terraform -ErrorAction SilentlyContinue)) {
                                 Write-Host "Installing Terraform $env:TF_VERSION..."
                                 $url = "https://releases.hashicorp.com/terraform/$env:TF_VERSION/terraform_$env:TF_VERSION`_windows_amd64.zip"
-                                Invoke-WebRequest -Uri $url -OutFile "$toolsDir\tf.zip" -UseBasicParsing
-                                Expand-Archive -Path "$toolsDir\tf.zip" -DestinationPath $toolsDir -Force
-                                Remove-Item "$toolsDir\tf.zip" -Force
+                                Invoke-WebRequest -Uri $url -OutFile "$toolsDir\\tf.zip" -UseBasicParsing
+                                Expand-Archive -Path "$toolsDir\\tf.zip" -DestinationPath $toolsDir -Force
+                                Remove-Item "$toolsDir\\tf.zip" -Force
                             }
                             Write-Host "Terraform: $(terraform version 2>$null)"
 
                             # Node.js
                             if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
                                 Write-Host "Installing Node.js 20..."
-                                $nodeZip = "$toolsDir\node.zip"
+                                $nodeZip = "$toolsDir\\node.zip"
                                 Invoke-WebRequest -Uri "https://nodejs.org/dist/v20.18.0/node-v20.18.0-win-x64.zip" -OutFile $nodeZip -UseBasicParsing
                                 Expand-Archive -Path $nodeZip -DestinationPath $toolsDir -Force
                                 Remove-Item $nodeZip -Force
-                                $env:PATH = "$toolsDir\node-v20.18.0-win-x64;$env:PATH"
+                                $env:PATH = "$toolsDir\\node-v20.18.0-win-x64;$env:PATH"
                             }
                             Write-Host "Node: $(node --version)"
                         '''
@@ -180,7 +180,7 @@ pipeline {
                         }
                     } else {
                         powershell '''
-                            $env:PATH = "$env:WORKSPACE\.tools;$env:PATH"
+                            $env:PATH = "$env:WORKSPACE\\.tools;$env:PATH"
                             Write-Host "Running Trivy IaC scan on Terraform directory..."
                             trivy config --severity HIGH,CRITICAL --format table --output $env:REPORT_FILE $env:TERRAFORM_DIR; if ($LASTEXITCODE -ne 0) { $true }
                             Write-Host ""
@@ -191,12 +191,12 @@ pipeline {
                             Write-Host "============================================================"
                         '''
                         powershell '''
-                            $env:PATH = "$env:WORKSPACE\.tools;$env:PATH"
+                            $env:PATH = "$env:WORKSPACE\\.tools;$env:PATH"
                             trivy config --severity HIGH,CRITICAL --format template --template "@contrib/html.tpl" --output $env:REPORT_HTML $env:TERRAFORM_DIR
                         '''
                         catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
                             powershell '''
-                                $env:PATH = "$env:WORKSPACE\.tools;$env:PATH"
+                                $env:PATH = "$env:WORKSPACE\\.tools;$env:PATH"
                                 trivy config --severity HIGH,CRITICAL --exit-code 1 $env:TERRAFORM_DIR
                             '''
                         }
@@ -260,7 +260,7 @@ pipeline {
                             sh 'npm install && node ai-remediation.js'
                         } else {
                             powershell '''
-                                $toolsDir = "$env:WORKSPACE\.tools"
+                                $toolsDir = "$env:WORKSPACE\\.tools"
                                 if (Test-Path "$toolsDir\node-v20*") {
                                     $nodeDir = Get-ChildItem "$toolsDir\node-v20*" -Directory | Select-Object -First 1
                                     $env:PATH = "$($nodeDir.FullName);$env:PATH"
@@ -302,7 +302,7 @@ pipeline {
                         '''
                     } else {
                         powershell '''
-                            $env:PATH = "$env:WORKSPACE\.tools;$env:PATH"
+                            $env:PATH = "$env:WORKSPACE\\.tools;$env:PATH"
                             Write-Host "Re-running Trivy to verify AI fixes..."
                             trivy config --severity HIGH,CRITICAL --format table $env:TERRAFORM_DIR
                             trivy config --severity HIGH,CRITICAL --exit-code 1 $env:TERRAFORM_DIR
@@ -338,7 +338,7 @@ pipeline {
                             '''
                         } else {
                             powershell '''
-                                $env:PATH = "$env:WORKSPACE\.tools;$env:PATH"
+                                $env:PATH = "$env:WORKSPACE\\.tools;$env:PATH"
                                 Write-Host "Initialising Terraform..."
                                 terraform init -input=false
                                 Write-Host ""
