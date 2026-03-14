@@ -61,7 +61,7 @@ pipeline {
 ╔══════════════════════════════════════════════════════════════════════╗
 ║  STAGE 2 of 7: INSTALL TOOLS                                        ║
 ║  ─────────────────────────────────────────────────────────────────  ║
-║  Trivy ${env.TRIVY_VERSION} • Terraform ${env.TF_VERSION} • Node.js 20║
+║  Trivy ${env.TRIVY_VERSION} • Terraform ${env.TF_VERSION} • Node.js 20 • AWS CLI ║
 ╚══════════════════════════════════════════════════════════════════════╝
                 """
                 script {
@@ -107,8 +107,22 @@ pipeline {
                                 echo "Node.js already installed: $(node --version)"
                             fi
 
+                            if ! command -v aws &> /dev/null; then
+                                echo "Installing AWS CLI v2 to $TOOLS_DIR..."
+                                cd /tmp
+                                curl -sS "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o awscliv2.zip
+                                unzip -q awscliv2.zip
+                                ./aws/install -i "$TOOLS_DIR/aws-cli" -b "$TOOLS_DIR"
+                                rm -rf awscliv2.zip aws
+                                cd -
+                                export PATH="$TOOLS_DIR:$PATH"
+                                echo "AWS CLI installed: $(aws --version)"
+                            else
+                                echo "AWS CLI already installed: $(aws --version)"
+                            fi
+
                             echo "" && echo "  ► Installed tools:" && ls -la "$TOOLS_DIR"
-                            echo "" && echo "  ✓ Stage 2 complete: Trivy, Terraform, Node.js ready"
+                            echo "" && echo "  ✓ Stage 2 complete: Trivy, Terraform, Node.js, AWS CLI ready"
                         '''
                     } else {
                         // Windows: download Trivy, Terraform, Node to workspace .tools dir
@@ -409,13 +423,20 @@ pipeline {
                                         terraform init -input=false
                                         echo ""
                                         echo "Importing existing resources (if any, for reruns without S3)..."
-                                        SG_ID=\$(aws ec2 describe-security-groups --group-names whizsuite-sg --query 'SecurityGroups[0].GroupId' --output text --region ap-south-1 2>/dev/null || echo "")
+                                        AWS_REGION="ap-south-1"
+                                        SG_ID=\$(aws ec2 describe-security-groups --filters "Name=group-name,Values=whizsuite-sg" --query 'SecurityGroups[0].GroupId' --output text --region "\$AWS_REGION" 2>/dev/null || echo "")
                                         if [ -n "\$SG_ID" ] && [ "\$SG_ID" != "None" ]; then
-                                            terraform import -input=false aws_security_group.whizsuite_sg "\$SG_ID" 2>/dev/null || true
+                                            echo "  → Importing security group: \$SG_ID"
+                                            terraform import -input=false aws_security_group.whizsuite_sg "\$SG_ID" || true
+                                        else
+                                            echo "  → No existing security group found (SG_ID=\$SG_ID)"
                                         fi
-                                        INSTANCE_ID=\$(aws ec2 describe-instances --filters "Name=tag:Name,Values=whizsuite-server" "Name=instance-state-name,Values=running,pending" --query 'Reservations[0].Instances[0].InstanceId' --output text --region ap-south-1 2>/dev/null || echo "")
+                                        INSTANCE_ID=\$(aws ec2 describe-instances --filters "Name=tag:Name,Values=whizsuite-server" "Name=instance-state-name,Values=running,pending" --query 'Reservations[0].Instances[0].InstanceId' --output text --region "\$AWS_REGION" 2>/dev/null || echo "")
                                         if [ -n "\$INSTANCE_ID" ] && [ "\$INSTANCE_ID" != "None" ]; then
-                                            terraform import -input=false aws_instance.whizsuite_app "\$INSTANCE_ID" 2>/dev/null || true
+                                            echo "  → Importing EC2 instance: \$INSTANCE_ID"
+                                            terraform import -input=false aws_instance.whizsuite_app "\$INSTANCE_ID" || true
+                                        else
+                                            echo "  → No existing instance found (INSTANCE_ID=\$INSTANCE_ID)"
                                         fi
                                         echo ""
                                         echo "Running Terraform plan..."
