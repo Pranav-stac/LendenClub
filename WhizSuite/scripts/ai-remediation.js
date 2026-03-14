@@ -88,6 +88,10 @@ async function main() {
     console.error(`ERROR: Could not read Trivy report from ${REPORT_FILE}`);
     process.exit(1);
   }
+  if (/Misconfigurations\s*\|\s*0\s*\|/.test(report) || report.includes('Clean (no security findings')) {
+    console.log('[AI Remediation] Trivy report shows 0 findings – skipping (no fixes needed).');
+    process.exit(0);
+  }
 
   const tfFiles = {};
   for (const f of APPLICABLE_FILES) {
@@ -101,10 +105,11 @@ async function main() {
 Your task is to fix ALL vulnerabilities found by Trivy. Use the apply_terraform_fix tool to apply each fix.
 
 Common findings and fixes:
-1. AVD-AWS-0107 / aws-ec2-no-public-ingress-sgr: SSH (port 22) open to 0.0.0.0/0 is insecure. Restrict cidr_blocks to a single admin IP, e.g. ["${ADMIN_IP}/32"]. Use the ADMIN_IP placeholder if no specific IP is provided.
+1. AVD-AWS-0107 / aws-ec2-no-public-ingress-sgr: SSH (port 22) open to 0.0.0.0/0 is insecure. Restrict cidr_blocks to a valid CIDR. Use ["10.0.0.1/32"] if ADMIN_IP not set - NEVER use literal "ADMIN_IP/32" or "YOUR_ADMIN_IP/32" (invalid).
 2. AVD-AWS-0131 / aws-ebs-encryption: EBS root_block_device must have encrypted = true. Add encrypted = true to root_block_device.
 
-Preserve all other Terraform structure, variables, and formatting. Output valid Terraform HCL.
+CRITICAL: Terraform and AWS require valid values. Use ONLY valid CIDR (e.g. 10.0.0.1/32), and description must match regex [0-9A-Za-z_ .:/()#,@+=&;{}!$*-] - use ASCII hyphen (-) NOT em dash.
+Preserve all other Terraform structure. Output valid Terraform HCL.
 Apply fixes for every vulnerability in the report. Call apply_terraform_fix for each file that needs changes.`;
 
   const userPrompt = `Trivy Security Scan Report:

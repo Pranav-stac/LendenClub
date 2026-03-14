@@ -7,9 +7,9 @@ resource "aws_security_group" "whizsuite_sg" {
   name        = "${var.app_name}-sg"
   description = "Security group for WhizSuite application server"
 
-  # SSH restricted (Trivy AWS-0107) – 10.0.0.1/32 for VPC-only; change for public SSH
+  # SSH restricted (Trivy AWS-0107) - 10.0.0.1/32 for VPC-only; change for public SSH
   ingress {
-    description = "SSH – restricted"
+    description = "SSH restricted"
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
@@ -18,7 +18,7 @@ resource "aws_security_group" "whizsuite_sg" {
 
   # HTTP access for Next.js client
   ingress {
-    description = "HTTP – Next.js client"
+    description = "HTTP Next.js client"
     from_port   = 3000
     to_port     = 3000
     protocol    = "tcp"
@@ -27,7 +27,7 @@ resource "aws_security_group" "whizsuite_sg" {
 
   # HTTP access for Express API
   ingress {
-    description = "HTTP – Express API"
+    description = "HTTP Express API"
     from_port   = 5000
     to_port     = 5000
     protocol    = "tcp"
@@ -43,7 +43,7 @@ resource "aws_security_group" "whizsuite_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  # Outbound – required for packages, Docker, RDS (Trivy AWS-0104: ignore – app needs internet)
+  # Outbound - required for packages, Docker, RDS (Trivy AWS-0104: ignore - app needs internet)
   #trivy:ignore:AVD-AWS-0104
   egress {
     description = "Allow all outbound (packages, Docker Hub, RDS, etc.)"
