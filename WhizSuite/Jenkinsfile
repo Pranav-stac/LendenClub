@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        TRIVY_VERSION   = "0.52.0"
+        TRIVY_VERSION   = "0.54.0"
         TF_VERSION      = "1.7.0"
         TERRAFORM_DIR   = "WhizSuite/terraform"
         REPORT_FILE     = "trivy-report.txt"
@@ -53,13 +53,17 @@ pipeline {
                             export PATH="$TOOLS_DIR:$PATH"
 
                             if ! command -v trivy &> /dev/null; then
-                                echo "Installing Trivy ${TRIVY_VERSION} to $TOOLS_DIR (direct download)..."
-                                curl -sfSL "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz" -o /tmp/trivy.tar.gz
-                                (cd /tmp && tar -xzf trivy.tar.gz)
-                                TRIVY_BIN=$(find /tmp -maxdepth 2 -name trivy -type f | head -1)
-                                mv "$TRIVY_BIN" "$TOOLS_DIR/trivy" && chmod +x "$TOOLS_DIR/trivy"
-                                rm -rf /tmp/trivy.tar.gz /tmp/trivy /tmp/trivy_*
-                                echo "Trivy installed: $($TOOLS_DIR/trivy --version)"
+                                echo "Installing Trivy ${TRIVY_VERSION} to $TOOLS_DIR..."
+                                if ! curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b "$TOOLS_DIR" v${TRIVY_VERSION}; then
+                                    echo "Install script failed, trying direct download..."
+                                    curl -sfSL "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz" -o /tmp/trivy.tar.gz
+                                    (cd /tmp && tar -xzf trivy.tar.gz)
+                                    TRIVY_BIN=$(find /tmp -maxdepth 2 -name trivy -type f 2>/dev/null | head -1)
+                                    mv "$TRIVY_BIN" "$TOOLS_DIR/trivy" 2>/dev/null || cp "$TRIVY_BIN" "$TOOLS_DIR/trivy"
+                                    chmod +x "$TOOLS_DIR/trivy"
+                                    rm -rf /tmp/trivy.tar.gz /tmp/trivy /tmp/trivy_*
+                                fi
+                                echo "Trivy installed: $(trivy --version)"
                             else
                                 echo "Trivy already installed: $(trivy --version)"
                             fi
