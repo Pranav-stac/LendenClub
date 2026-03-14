@@ -303,38 +303,48 @@ pipeline {
         // ─────────────────────────────────────────────────────────
         // STAGE 6 – Terraform Plan
         // Only runs after security re-scan passes
+        // Requires AWS credentials: create Jenkins credential 'aws-terraform-credentials'
+        // (Username = Access Key ID, Password = Secret Access Key)
         // ─────────────────────────────────────────────────────────
         stage('Terraform Plan') {
             steps {
                 echo '========== STAGE 6: Terraform Plan =========='
-                dir("${TERRAFORM_DIR}") {
-                    script {
-                        if (isUnix()) {
-                            sh '''
-                                echo "Initialising Terraform..."
-                                terraform init -input=false
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'aws-terraform-credentials',
+                        usernameVariable: 'AWS_ACCESS_KEY_ID',
+                        passwordVariable: 'AWS_SECRET_ACCESS_KEY'
+                    )
+                ]) {
+                    dir("${TERRAFORM_DIR}") {
+                        script {
+                            if (isUnix()) {
+                                sh '''
+                                    echo "Initialising Terraform..."
+                                    terraform init -input=false
 
-                                echo ""
-                                echo "Running Terraform plan..."
-                                terraform plan \
-                                    -input=false \
-                                    -out=tfplan \
-                                    -var="aws_region=ap-south-1"
+                                    echo ""
+                                    echo "Running Terraform plan..."
+                                    terraform plan \
+                                        -input=false \
+                                        -out=tfplan \
+                                        -var="aws_region=ap-south-1"
 
-                                echo ""
-                                echo "Terraform plan complete. Review output above before applying."
-                            '''
-                        } else {
-                            powershell '''
-                                $env:PATH = "$env:WORKSPACE\\.tools;$env:PATH"
-                                Write-Host "Initialising Terraform..."
-                                terraform init -input=false
-                                Write-Host ""
-                                Write-Host "Running Terraform plan..."
-                                terraform plan -input=false -out=tfplan -var="aws_region=ap-south-1"
-                                Write-Host ""
-                                Write-Host "Terraform plan complete. Review output above before applying."
-                            '''
+                                    echo ""
+                                    echo "Terraform plan complete. Review output above before applying."
+                                '''
+                            } else {
+                                powershell '''
+                                    $env:PATH = "$env:WORKSPACE\\.tools;$env:PATH"
+                                    Write-Host "Initialising Terraform..."
+                                    terraform init -input=false
+                                    Write-Host ""
+                                    Write-Host "Running Terraform plan..."
+                                    terraform plan -input=false -out=tfplan -var="aws_region=ap-south-1"
+                                    Write-Host ""
+                                    Write-Host "Terraform plan complete. Review output above before applying."
+                                '''
+                            }
                         }
                     }
                 }

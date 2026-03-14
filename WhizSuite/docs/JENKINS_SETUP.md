@@ -126,7 +126,26 @@ No Jenkinsfile changes needed.
 
 ---
 
-## Step 5: Optional – Restrict SSH to Your IP
+## Step 5: Add AWS Credentials (Required for Terraform Plan)
+
+Terraform Plan (Stage 6) needs AWS credentials to validate the plan against the AWS API.
+
+1. Go to **Manage Jenkins → Credentials → System → Global credentials (unrestricted)**
+2. Click **Add Credentials**
+3. Set:
+   - **Kind**: Username with password
+   - **Scope**: Global
+   - **Username**: Your AWS Access Key ID (e.g. `AKIA...`)
+   - **Password**: Your AWS Secret Access Key
+   - **ID**: `aws-terraform-credentials`
+   - **Description**: AWS credentials for Terraform plan
+4. Save
+
+The pipeline uses this credential to set `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` for the Terraform Plan stage.
+
+---
+
+## Step 6: Optional – Restrict SSH to Your IP (Optional)
 
 If you want the AI to restrict SSH to your IP instead of a placeholder:
 
@@ -137,7 +156,7 @@ If you want the AI to restrict SSH to your IP instead of a placeholder:
 
 ---
 
-## Step 6: Adjust Jenkinsfile Path (if needed)
+## Step 7: Adjust Jenkinsfile Path (if needed)
 
 If your repo structure is:
 
@@ -151,7 +170,7 @@ If your repo structure is:
 
 ---
 
-## Step 7: Run the Pipeline
+## Step 8: Run the Pipeline
 
 1. Open your job **WhizSuite-DevOps**
 2. Click **Build Now**
@@ -175,6 +194,7 @@ If your repo structure is:
 | **Re-scan still fails** | Check if AI Remediation ran (Stage 4 logs). If GEMINI_API_KEY was missing, it skips. Add the key and re-run |
 | **"sh: command not found" on Windows** | Use native Windows Jenkins (not WSL). The pipeline detects OS and uses `bat`/`powershell` on Windows |
 | **PowerShell execution policy** | On Windows, run `Set-ExecutionPolicy RemoteSigned -Scope CurrentUser` if PowerShell scripts are blocked |
+| **Terraform "No valid credential sources found"** | Add AWS credentials (Step 5). Create credential ID `aws-terraform-credentials`; Kind: Username with password; Username = Access Key ID, Password = Secret Access Key |
 
 ---
 
@@ -184,5 +204,6 @@ If your repo structure is:
 - [ ] Plugins installed: Pipeline, Git, HTML Publisher, Credentials Binding
 - [ ] Pipeline job created with correct Git URL and Script Path
 - [ ] GEMINI_API_KEY added (credential or global env)
+- [ ] AWS credentials added (`aws-terraform-credentials`) for Terraform Plan
 - [ ] (Optional) ADMIN_IP set for SSH restriction
-- [ ] First build run – AI remediation and re-scan succeed
+- [ ] First build run – AI remediation, re-scan, and Terraform plan succeed
