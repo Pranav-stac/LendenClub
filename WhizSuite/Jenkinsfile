@@ -47,41 +47,47 @@ pipeline {
                 script {
                     if (isUnix()) {
                         sh '''
+                            set -e
                             TOOLS_DIR="${WORKSPACE}/.tools"
                             mkdir -p "$TOOLS_DIR"
                             export PATH="$TOOLS_DIR:$PATH"
 
                             if ! command -v trivy &> /dev/null; then
-                                echo "Installing Trivy ${TRIVY_VERSION} to $TOOLS_DIR..."
-                                curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh \
-                                    | sh -s -- -b "$TOOLS_DIR" v${TRIVY_VERSION}
+                                echo "Installing Trivy ${TRIVY_VERSION} to $TOOLS_DIR (direct download)..."
+                                curl -sfSL "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz" -o /tmp/trivy.tar.gz
+                                (cd /tmp && tar -xzf trivy.tar.gz)
+                                TRIVY_BIN=$(find /tmp -maxdepth 2 -name trivy -type f | head -1)
+                                mv "$TRIVY_BIN" "$TOOLS_DIR/trivy" && chmod +x "$TOOLS_DIR/trivy"
+                                rm -rf /tmp/trivy.tar.gz /tmp/trivy /tmp/trivy_*
+                                echo "Trivy installed: $($TOOLS_DIR/trivy --version)"
                             else
                                 echo "Trivy already installed: $(trivy --version)"
                             fi
 
                             if ! command -v terraform &> /dev/null; then
                                 echo "Installing Terraform ${TF_VERSION} to $TOOLS_DIR..."
-                                (cd "$TOOLS_DIR" && curl -fsSL "https://releases.hashicorp.com/terraform/${TF_VERSION}/terraform_${TF_VERSION}_linux_amd64.zip" -o tf.zip && unzip -o tf.zip && rm tf.zip)
-                                if ! command -v terraform &> /dev/null; then
-                                    (cd "$TOOLS_DIR" && curl -fsSL "https://releases.hashicorp.com/terraform/${TF_VERSION}/terraform_${TF_VERSION}_linux_amd64.zip" -o tf.zip && jar xf tf.zip && rm tf.zip)
-                                fi
+                                cd "$TOOLS_DIR"
+                                curl -fsSL "https://releases.hashicorp.com/terraform/${TF_VERSION}/terraform_${TF_VERSION}_linux_amd64.zip" -o tf.zip
+                                (unzip -o tf.zip 2>/dev/null) || (jar xf tf.zip)
+                                rm -f tf.zip
+                                cd -
+                                echo "Terraform installed: $(terraform version)"
+                            else
+                                echo "Terraform already installed: $(terraform version)"
                             fi
-                            echo "Terraform: $(terraform version 2>/dev/null || echo 'not found')"
 
                             if ! command -v node &> /dev/null; then
                                 echo "Installing Node.js 20 to $TOOLS_DIR..."
-                                (cd /tmp && curl -fsSL https://nodejs.org/dist/v20.18.0/node-v20.18.0-linux-x64.tar.gz -o node.tar.gz && tar -xzf node.tar.gz -C "$TOOLS_DIR" && rm node.tar.gz)
+                                curl -fsSL "https://nodejs.org/dist/v20.18.0/node-v20.18.0-linux-x64.tar.gz" -o /tmp/node.tar.gz
+                                tar -xzf /tmp/node.tar.gz -C "$TOOLS_DIR"
+                                rm -f /tmp/node.tar.gz
                                 export PATH="$TOOLS_DIR/node-v20.18.0-linux-x64/bin:$PATH"
-                                if command -v node &> /dev/null; then
-                                    echo "Node.js installed: $(node --version)"
-                                else
-                                    echo "WARNING: Node.js install failed. AI remediation may fail."
-                                fi
+                                echo "Node.js installed: $(node --version)"
                             else
                                 echo "Node.js already installed: $(node --version)"
                             fi
 
-                            echo "Installed in $TOOLS_DIR: $(ls -la $TOOLS_DIR)"
+                            echo "Tools in $TOOLS_DIR:" && ls -la "$TOOLS_DIR"
                         '''
                     } else {
                         // Windows: download Trivy, Terraform, Node to workspace .tools dir
