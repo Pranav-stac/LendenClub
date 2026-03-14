@@ -24,9 +24,9 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const ADMIN_IP = process.env.ADMIN_IP || 'YOUR_ADMIN_IP';
-// Use WORKSPACE (Jenkins) or current dir when run from repo root
-const WORKSPACE_ROOT = process.env.WORKSPACE || process.cwd();
-const REPORT_FILE = path.resolve(WORKSPACE_ROOT, process.env.REPORT_FILE || 'trivy-report.txt');
+// Jenkins sets WORKSPACE_ROOT; fallback to WORKSPACE or cwd
+const WORKSPACE_ROOT = process.env.WORKSPACE_ROOT || process.env.WORKSPACE || process.cwd();
+const REPORT_FILE = process.env.REPORT_FILE_ABS || path.resolve(WORKSPACE_ROOT, process.env.REPORT_FILE || 'trivy-report.txt');
 const TERRAFORM_DIR = path.resolve(WORKSPACE_ROOT, process.env.TERRAFORM_DIR || 'WhizSuite/terraform');
 
 const APPLICABLE_FILES = ['security_groups.tf', 'ec2.tf'];
@@ -88,10 +88,22 @@ async function main() {
     console.error(`ERROR: Could not read Trivy report from ${REPORT_FILE}`);
     process.exit(1);
   }
-  if (/Misconfigurations\s*\|\s*0\s*\|/.test(report) || report.includes('Clean (no security findings')) {
+  // Only skip when there are truly 0 findings. Trivy's Legend always shows "0: Clean" even when
+  // other rows have findings. Run AI when we detect any of: Failures>=1, CRITICAL/HIGH, or rule IDs.
+  const beforeLegend = (report.split('Legend:')[0] || report);
+  const hasFindings =
+    /Failures?\s*:\s*[1-9]\d*/i.test(report) ||
+    /FAILURES?\s*:\s*[1-9]/.test(report) ||
+    /Tests:\s*\d+\s*\([^)]*FAILURES?\s*:\s*[1-9]/.test(report) ||
+    /AWS-\d{4}\s*\(/.test(report) ||
+    /AVD-AWS-\d{4}/.test(report) ||
+    beforeLegend.includes('CRITICAL') ||
+    beforeLegend.includes('HIGH');
+  if (!hasFindings) {
     console.log('[AI Remediation] Trivy report shows 0 findings – skipping (no fixes needed).');
     process.exit(0);
   }
+  console.log('[AI Remediation] Detected security findings – invoking Gemini for fixes.');
 
   const tfFiles = {};
   for (const f of APPLICABLE_FILES) {

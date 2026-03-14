@@ -244,9 +244,10 @@ pipeline {
         // ─────────────────────────────────────────────────────────
         stage('AI Remediation') {
             environment {
-                WORKSPACE_ROOT = "${env.WORKSPACE}"
-                REPORT_FILE    = "trivy-report.txt"
-                TERRAFORM_DIR  = "WhizSuite/terraform"
+                WORKSPACE_ROOT   = "${env.WORKSPACE}"
+                REPORT_FILE_ABS = "${env.WORKSPACE}/trivy-report.txt"
+                TERRAFORM_DIR   = "WhizSuite/terraform"
+                ADMIN_IP       = "${params.ADMIN_IP?.contains('/') ? params.ADMIN_IP : params.ADMIN_IP + '/32'}"
             }
             steps {
                 echo '========== STAGE 4: AI Remediation (Gemini 2.5 Flash) =========='
