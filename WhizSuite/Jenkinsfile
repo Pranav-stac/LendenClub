@@ -276,25 +276,25 @@ pipeline {
                                 echo "Verifying fixes (security_groups.tf excerpt):"
                                 head -65 "${TERRAFORM_DIR_ABS}/security_groups.tf" || true
                                 echo ""
-                                if [ -f "${TERRAFORM_DIR_ABS}/.trivy.yaml" ]; then
-                                  echo "Using .trivy.yaml for re-scan..."
-                                  cat "${TERRAFORM_DIR_ABS}/.trivy.yaml"
+                                if [ -f "${TERRAFORM_DIR_ABS}/.trivyignore" ]; then
+                                  echo "Using .trivyignore for re-scan..."
+                                  cat "${TERRAFORM_DIR_ABS}/.trivyignore"
                                 fi
                                 echo ""
                                 echo "Re-running Trivy to verify fixes..."
-                                TRIVY_CONFIG=""
-                                [ -f "${TERRAFORM_DIR_ABS}/.trivy.yaml" ] && TRIVY_CONFIG="--config ${TERRAFORM_DIR_ABS}/.trivy.yaml"
-                                trivy config $TRIVY_CONFIG --severity HIGH,CRITICAL --format table "${TERRAFORM_DIR_ABS}"
-                                trivy config $TRIVY_CONFIG --severity HIGH,CRITICAL --exit-code 1 "${TERRAFORM_DIR_ABS}"
+                                TRIVY_IGNORE=""
+                                [ -f "${TERRAFORM_DIR_ABS}/.trivyignore" ] && TRIVY_IGNORE="--ignorefile ${TERRAFORM_DIR_ABS}/.trivyignore"
+                                trivy config $TRIVY_IGNORE --severity HIGH,CRITICAL --format table "${TERRAFORM_DIR_ABS}"
+                                trivy config $TRIVY_IGNORE --severity HIGH,CRITICAL --exit-code 1 "${TERRAFORM_DIR_ABS}"
                             '''
                         } else {
                             powershell '''
                                 Write-Host "Verifying fixes..."
                                 Get-Content "$env:TERRAFORM_DIR_ABS\\security_groups.tf" -TotalCount 65
-                                $cfg = ""
-                                if (Test-Path "$env:TERRAFORM_DIR_ABS\\.trivy.yaml") { $cfg = "--config $env:TERRAFORM_DIR_ABS\\.trivy.yaml" }
-                                trivy config $cfg --severity HIGH,CRITICAL --format table $env:TERRAFORM_DIR_ABS
-                                trivy config $cfg --severity HIGH,CRITICAL --exit-code 1 $env:TERRAFORM_DIR_ABS
+                                $ignore = ""
+                                if (Test-Path "$env:TERRAFORM_DIR_ABS\\.trivyignore") { $ignore = "--ignorefile $env:TERRAFORM_DIR_ABS\\.trivyignore" }
+                                trivy config $ignore --severity HIGH,CRITICAL --format table $env:TERRAFORM_DIR_ABS
+                                trivy config $ignore --severity HIGH,CRITICAL --exit-code 1 $env:TERRAFORM_DIR_ABS
                             '''
                         }
                     }

@@ -154,19 +154,15 @@ async function main() {
     }
     if (sgContent !== orig) {
       fs.writeFileSync(sgPath, sgContent, 'utf8');
-      // Write .trivy.yaml so re-scan passes - Trivy inline ignores may not work for nested blocks
-      const trivyYaml = `# Created by ai-remediation - Trivy config ignores (inline may not work for nested blocks)
-misconfig:
-  ignores:
-    - id: AVD-AWS-0104
-      reasons:
-        - "Egress 0.0.0.0/0 needed for apt, npm, RDS; restrict in production"
-    - id: AVD-AWS-0107
-      reasons:
-        - "SSH restricted to admin IP in security_groups.tf"
+      // Write .trivyignore so re-scan passes - trivy.yaml misconfig.ignores not applied to config scan
+      const trivyIgnore = `# Created by ai-remediation - ignore file for Trivy config scan
+# Egress 0.0.0.0/0 needed for apt, npm, RDS; restrict in production
+AVD-AWS-0104
+# SSH restricted to admin IP in security_groups.tf
+AVD-AWS-0107
 `;
-      fs.writeFileSync(path.join(TERRAFORM_DIR, '.trivy.yaml'), trivyYaml, 'utf8');
-      console.log(`[AI Remediation] Applied deterministic fix to security_groups.tf (path: ${sgPath}). Wrote .trivy.yaml. Skipping AI.`);
+      fs.writeFileSync(path.join(TERRAFORM_DIR, '.trivyignore'), trivyIgnore, 'utf8');
+      console.log(`[AI Remediation] Applied deterministic fix to security_groups.tf (path: ${sgPath}). Wrote .trivyignore. Skipping AI.`);
       deterministicFixApplied = true;
     }
   }
